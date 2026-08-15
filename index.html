@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>3D Sloth - Mini Exhibition of Feelings</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; user-select: none; -webkit-user-select: none; }
+    body, html { width: 100%; height: 100%; overflow: hidden; background: #0c1021; touch-action: none; }
+
+    /* จัดการเลเยอร์แคนวาสเกมให้อยู่ด้านหลัง */
+    canvas { position: absolute; top: 0; left: 0; z-index: 1; outline: none; }
+
+    #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
+    
+    .hud-box { 
+      position: absolute; top: 15px; left: 15px; 
+      background: rgba(20, 16, 38, 0.9); border: 1.5px solid #ff75a0; 
+      padding: 10px 16px; border-radius: 8px; color: #fff; font-size: 13px;
+      box-shadow: 0 0 10px rgba(255, 117, 160, 0.3); pointer-events: auto;
+    }
+    .hud-title { color: #4ea8de; font-weight: bold; font-size: 15px; margin-bottom: 4px; }
+    
+    .name-input {
+      background: rgba(255, 255, 255, 0.15); border: 1px solid #4ea8de;
+      color: #fff; padding: 4px 8px; border-radius: 4px; width: 140px;
+      font-size: 12px; margin-top: 4px; outline: none; pointer-events: auto;
+    }
+
+    .btn-music {
+      position: absolute; top: 15px; right: 15px;
+      background: rgba(20, 16, 38, 0.9); border: 1.5px solid #ff75a0;
+      color: #fff; padding: 8px 14px; border-radius: 20px; font-size: 13px; font-weight: bold;
+      cursor: pointer; pointer-events: auto; z-index: 20;
+      box-shadow: 0 0 10px rgba(255, 117, 160, 0.3);
+      display: flex; align-items: center; gap: 6px;
+    }
+    .btn-music.active { border-color: #4ea8de; box-shadow: 0 0 12px rgba(78, 168, 222, 0.5); }
+
+    #chat-history {
+      position: absolute; bottom: 75px; left: 50%;
+      transform: translateX(-50%);
+      width: 90%; max-width: 480px; height: 130px;
+      background: rgba(15, 10, 25, 0.85);
+      border: 1px solid rgba(78, 168, 222, 0.4);
+      border-radius: 12px; padding: 10px 14px;
+      overflow-y: auto; pointer-events: auto;
+      display: flex; flex-direction: column; gap: 6px;
+      font-size: 13px; color: #fff;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(4px);
+    }
+    #chat-history::-webkit-scrollbar { width: 5px; }
+    #chat-history::-webkit-scrollbar-thumb { background: #4ea8de; border-radius: 10px; }
+    
+    .chat-msg { word-break: break-word; line-height: 1.4; animation: fadeIn 0.3s ease; }
+    .chat-msg .author { color: #ff75a0; font-weight: bold; }
+    .chat-msg .time { color: #7209b7; font-size: 10px; margin-left: 6px; opacity: 0.8; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+    #chat-container {
+      position: absolute; bottom: 20px; left: 50%;
+      transform: translateX(-50%);
+      display: flex; align-items: center; gap: 8px;
+      width: 90%; max-width: 480px;
+      pointer-events: auto; z-index: 20;
+    }
+
+    .chat-input {
+      flex: 1;
+      background: rgba(15, 10, 25, 0.9);
+      border: 1.5px solid #4ea8de;
+      color: #fff; padding: 10px 16px; border-radius: 25px;
+      font-size: 14px; outline: none; pointer-events: auto;
+      box-shadow: 0 0 10px rgba(78, 168, 222, 0.3);
+    }
+    .chat-input::placeholder { color: #a0a0c0; }
+
+    .btn-send {
+      background: #4ea8de; border: none; color: #fff;
+      padding: 10px 18px; border-radius: 20px; font-weight: bold;
+      cursor: pointer; font-size: 13px; pointer-events: auto;
+      box-shadow: 0 0 10px rgba(78, 168, 222, 0.4);
+    }
+    .btn-send:active { transform: scale(0.95); }
+
+    .btn-mic {
+      width: 42px; height: 42px; border-radius: 50%;
+      background: rgba(20, 16, 38, 0.9); border: 1.5px solid #ff75a0;
+      color: #fff; font-size: 18px; display: flex;
+      align-items: center; justify-content: center;
+      cursor: pointer; flex-shrink: 0; pointer-events: auto;
+      box-shadow: 0 0 10px rgba(255, 117, 160, 0.3);
+    }
+    .btn-mic.active {
+      background: #ff75a0;
+      animation: pulse-mic 1.2s infinite;
+    }
+    @keyframes pulse-mic { 0% { box-shadow: 0 0 0 0 rgba(255, 117, 160, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(255, 117, 160, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 117, 160, 0); } }
+
+    #joystick-base {
+      position: absolute; bottom: 35px; left: 35px;
+      width: 130px; height: 130px;
+      background: rgba(78, 168, 222, 0.2);
+      border: 3px solid rgba(255, 117, 160, 0.6);
+      border-radius: 50%;
+      pointer-events: auto; touch-action: none; cursor: pointer; z-index: 20;
+    }
+    #joystick-knob {
+      position: absolute; top: 50%; left: 50%;
+      width: 50px; height: 50px;
+      background: rgba(255, 117, 160, 0.9);
+      border: 2px solid #90e0ef;
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      box-shadow: 0 0 12px rgba(255, 117, 160, 0.6);
+    }
+
+    .btn-jump { 
+      position: absolute; bottom: 85px; right: 35px; width: 70px; height: 70px; 
+      border-radius: 50%; background: rgba(78, 168, 222, 0.4); 
+      border: 2px solid #4ea8de; color: #fff; font-size: 24px;
+      display: flex; align-items: center; justify-content: center;
+      pointer-events: auto; cursor: pointer; z-index: 20;
+      box-shadow: 0 0 15px rgba(78, 168, 222, 0.4);
+    }
+    .btn-jump:active { background: rgba(255, 117, 160, 0.8); }
+
+    #checkin-prompt {
+      position: absolute; bottom: 165px; right: 35px;
+      background: #ff75a0; border: 2px solid #fff; color: #fff;
+      padding: 12px 20px; border-radius: 30px; font-weight: bold; font-size: 15px;
+      display: none; pointer-events: auto; cursor: pointer; z-index: 20;
+      box-shadow: 0 0 20px rgba(255, 117, 160, 0.8);
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+
+    #warp-notice {
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      background: rgba(10, 5, 25, 0.9); border: 2px solid #7209b7;
+      color: #e0aaff; padding: 18px 36px; border-radius: 30px;
+      font-size: 22px; font-weight: bold; text-align: center;
+      pointer-events: none; opacity: 0; transition: opacity 0.4s ease; z-index: 30;
+      box-shadow: 0 0 30px rgba(114, 9, 183, 0.8);
+    }
+  </style>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+
+  <!-- Audio Element: เพลงบรรเลงเปียโนและ Ambient เบาๆ ผ่อนคลาย ไม่ติดลิขสิทธิ์ -->
+  <audio id="bgm-player" loop crossorigin="anonymous" preload="auto">
+    <source src="202608152209.mp3" type="audio/mpeg">
+  </audio>
+
+  <div id="ui-layer">
+    <div class="hud-box">
+      <div class="hud-title">🦥 28 CHECK-IN SIGNS</div>
+      <div>ตั้งชื่อ: <input type="text" id="player-name-input" class="name-input" value="Sloth" placeholder="ไม่เกิน 7 ตัว"></div>
+      <div style="margin-top:4px;">สถานะ: <span id="checkin-status" style="color:#ff85a1;">ยังไม่เช็คอิน</span></div>
+      <div style="margin-top:2px; font-size:11px; color:#4ea8de;">โซน: <span id="zone-status">ห้องจัดแสดงหลัก</span></div>
+    </div>
+
+    <!-- ปุ่มเปิด-ปิดเพลง -->
+    <button class="btn-music" id="btn-music">🔊 BGM: ปิดอยู่ (คลิกเปิดเพลง)</button>
+
+    <div id="chat-history">
+      <div class="chat-msg"><span class="author">ระบบ:</span> ยินดีต้อนรับสู่นิทรรศการ! (แก้ไขปุ่มกดและระบบเสียงเรียบร้อย)</div>
+    </div>
+
+    <div id="chat-container">
+      <button class="btn-mic" id="btn-mic" title="เปิด/ปิดไมค์">🎙️</button>
+      <input type="text" id="chat-input" class="chat-input" placeholder="พิมพ์ข้อความคุยที่นี่...">
+      <button class="btn-send" id="btn-send">ส่ง</button>
+    </div>
+
+    <div id="checkin-prompt">📝 กดเช็คอิน / แก้ไขป้าย</div>
+    <div id="joystick-base"><div id="joystick-knob"></div></div>
+    <div class="btn-jump" id="btn-jump">🦘</div>
+    <div id="warp-notice">🔮 กำลังข้ามประตูมิติ...</div>
+  </div>
+
+  <script>
+    // --- AUDIO CONTROL SYSTEM ---
+    const bgmPlayer = document.getElementById('bgm-player');
+    const btnMusic = document.getElementById('btn-music');
+    let isMusicPlaying = false;
+    bgmPlayer.volume = 0.65;
+
+    function toggleMusic() {
+      if (isMusicPlaying) {
+        bgmPlayer.pause();
+        btnMusic.innerText = '🔊 BGM: ปิดอยู่ (คลิกเปิดเพลง)';
+        btnMusic.classList.remove('active');
+        isMusicPlaying = false;
+      } else {
+        bgmPlayer.play().then(() => {
+          btnMusic.innerText = '🎶 BGM: กำลังเล่นอยู่ 🔊';
+          btnMusic.classList.add('active');
+          isMusicPlaying = true;
+        }).catch(err => {
+          console.log("Audio play blocked:", err);
+          btnMusic.innerText = '⚠️ คลิกอีกครั้งเพื่อเปิดเพลง';
+        });
+      }
+    }
+
+    btnMusic.addEventListener('click', toggleMusic);
+
+    const startAudioOnFirstTouch = () => {
+      if (!isMusicPlaying && bgmPlayer.paused) {
+        bgmPlayer.play().then(() => {
+          btnMusic.innerText = '🎶 BGM: กำลังเล่นอยู่ 🔊';
+          btnMusic.classList.add('active');
+          isMusicPlaying = true;
+        }).catch(() => {});
+      }
+      window.removeEventListener('pointerdown', startAudioOnFirstTouch);
+    };
+    window.addEventListener('pointerdown', startAudioOnFirstTouch);
+
+    // --- 1. SETUP THREE.JS SCENE ---
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x1a1838);
+    scene.fog = new THREE.FogExp2(0x1a1838, 0.007);
+
+    const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.shadowMap.enabled = true;
+    document.body.appendChild(renderer.domElement);
+
+    const ambientLight = new THREE.AmbientLight(0xd8b4fe, 0.65);
+    scene.add(ambientLight);
+    const dirLight = new THREE.DirectionalLight(0x4ea8de, 0.9);
+    dirLight.position.set(50, 80, 50);
+    dirLight.castShadow = true;
+    scene.add(dirLight);
+
+    // --- 2. MAIN ROOM (ขนาด 250x250) ---
+    const ROOM_SIZE = 250;
+    const BOUNDARY = (ROOM_SIZE / 2) - 3;
+
+    const floor = new THREE.Mesh(
+      new THREE.PlaneGeometry(ROOM_SIZE, ROOM_SIZE),
+      new THREE.MeshStandardMaterial({ color: 0x8093f1, roughness: 0.6 })
+    );
+    floor.rotation.x = -Math.PI / 2;
+    floor.receiveShadow = true;
+    scene.add(floor);
+
+    const grid = new THREE.GridHelper(ROOM_SIZE, 100, 0xff75a0, 0x48cae4);
+    grid.position.y = 0.01;
+    scene.add(grid);
+
+    const wallMat = new THREE.MeshStandardMaterial({ color: 0xff85a1, roughness: 0.5 });
+    function addWall(w, h, d, x, y, z) {
+      const wall = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), wallMat);
+      wall.position.set(x, y, z);
+      wall.castShadow = wall.receiveShadow = true;
+      scene.add(wall);
+    }
+    const WALL_H = 18;
+    addWall(ROOM_SIZE, WALL_H, 3, 0, WALL_H/2, -ROOM_SIZE/2);
+    addWall(ROOM_SIZE, WALL_H, 3, 0, WALL_H/2, ROOM_SIZE/2);
+    addWall(3, WALL_H, ROOM_SIZE, -ROOM_SIZE/2, WALL_H/2, 0);
+    addWall(3, WALL_H, ROOM_SIZE, ROOM_SIZE/2, WALL_H/2, 0);
+
+    // --- 3. SMALL ROOM (ห้องลับขนาดเล็ก 70x70 ที่ X = 600) ---
+    const SMALL_ROOM_OFFSET_X = 600;
+    const SMALL_ROOM_SIZE = 70;
+    const SMALL_BOUNDARY = (SMALL_ROOM_SIZE / 2) - 3;
+
+    const smallFloor = new THREE.Mesh(
+      new THREE.PlaneGeometry(SMALL_ROOM_SIZE, SMALL_ROOM_SIZE),
+      new THREE.MeshStandardMaterial({ color: 0x2a0845, roughness: 0.4 })
+    );
+    smallFloor.position.set(SMALL_ROOM_OFFSET_X, 0, 0);
+    smallFloor.rotation.x = -Math.PI / 2;
+    smallFloor.receiveShadow = true;
+    scene.add(smallFloor);
+
+    const smallGrid = new THREE.GridHelper(SMALL_ROOM_SIZE, 30, 0xf72585, 0x7209b7);
+    smallGrid.position.set(SMALL_ROOM_OFFSET_X, 0.01, 0);
+    scene.add(smallGrid);
+
+    const smallWallMat = new THREE.MeshStandardMaterial({ color: 0x3a0ca3, roughness: 0.5 });
+    function addSmallWall(w, h, d, x, y, z) {
+      const wall = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), smallWallMat);
+      wall.position.set(x, y, z);
+      wall.castShadow = wall.receiveShadow = true;
+      scene.add(wall);
+    }
+    addSmallWall(SMALL_ROOM_SIZE, WALL_H, 2, SMALL_ROOM_OFFSET_X, WALL_H/2, -SMALL_ROOM_SIZE/2);
+    addSmallWall(SMALL_ROOM_SIZE, WALL_H, 2, SMALL_ROOM_OFFSET_X, WALL_H/2, SMALL_ROOM_SIZE/2);
+    addSmallWall(2, WALL_H, SMALL_ROOM_SIZE, SMALL_ROOM_OFFSET_X - SMALL_ROOM_SIZE/2, WALL_H/2, 0);
+    addSmallWall(2, WALL_H, SMALL_ROOM_SIZE, SMALL_ROOM_OFFSET_X + SMALL_ROOM_SIZE/2, WALL_H/2, 0);
+
+    const smallRoomLight = new THREE.PointLight(0xf72585, 2.5, 80);
+    smallRoomLight.position.set(SMALL_ROOM_OFFSET_X, 12, 0);
+    scene.add(smallRoomLight);
+
+    // --- 4. PORTAL SYSTEM ---
+    const portals = [];
+    let isWarping = false;
+    let inSmallRoom = false;
+    let exitedPortalYet = true;
+
+    function createPortal(x, z, targetPos, labelStr) {
+      const portalGroup = new THREE.Group();
+      portalGroup.position.set(x, 0, z);
+
+      const ringGeo = new THREE.TorusGeometry(3.5, 0.3, 16, 32);
+      const ringMat = new THREE.MeshBasicMaterial({ color: 0x9d4edd, wireframe: true });
+      const ringMesh = new THREE.Mesh(ringGeo, ringMat);
+      ringMesh.position.y = 4.5;
+      portalGroup.add(ringMesh);
+
+      const innerGeo = new THREE.CylinderGeometry(3.2, 3.2, 0.2, 32);
+      const innerMat = new THREE.MeshBasicMaterial({ color: 0x7209b7, transparent: true, opacity: 0.75 });
+      const innerMesh = new THREE.Mesh(innerGeo, innerMat);
+      innerMesh.rotation.x = Math.PI / 2;
+      innerMesh.position.y = 4.5;
+      portalGroup.add(innerMesh);
+
+      const baseGeo = new THREE.CylinderGeometry(4.2, 4.8, 0.6, 32);
+      const baseMat = new THREE.MeshStandardMaterial({ color: 0x10002b, roughness: 0.2 });
+      const baseMesh = new THREE.Mesh(baseGeo, baseMat);
+      baseMesh.position.y = 0.3;
+      portalGroup.add(baseMesh);
+
+      const pLight = new THREE.PointLight(0xb5179e, 2, 25);
+      pLight.position.y = 4.5;
+      portalGroup.add(pLight);
+
+      scene.add(portalGroup);
+
+      portals.push({
+        group: portalGroup,
+        ringMesh: ringMesh,
+        pos: new THREE.Vector3(x, 0, z),
+        targetPos: targetPos,
+        label: labelStr
+      });
+    }
+
+    const portalDist = 108;
+    const targetSmallRoomSpawn = new THREE.Vector3(SMALL_ROOM_OFFSET_X, 0, 8);
+    createPortal(-portalDist, -portalDist, targetSmallRoomSpawn, "ห้องลับ (Secret Room)");
+    createPortal(portalDist, -portalDist, targetSmallRoomSpawn, "ห้องลับ (Secret Room)");
+    createPortal(portalDist, portalDist, targetSmallRoomSpawn, "ห้องลับ (Secret Room)");
+    createPortal(-portalDist, portalDist, targetSmallRoomSpawn, "ห้องลับ (Secret Room)");
+
+    createPortal(SMALL_ROOM_OFFSET_X, 0, new THREE.Vector3(0, 0, 12), "ห้องจัดแสดงหลัก");
+
+    // --- 5. FLOATING CENTER TITLE ---
+    const centerTitleGroup = new THREE.Group();
+    centerTitleGroup.position.set(0, 18, 0);
+
+    const titleCanvas = document.createElement('canvas');
+    titleCanvas.width = 1024; titleCanvas.height = 320;
+    const tCtx = titleCanvas.getContext('2d');
+
+    tCtx.fillStyle = 'rgba(20, 15, 38, 0.85)';
+    tCtx.beginPath(); tCtx.roundRect(20, 20, 984, 280, 50); tCtx.fill();
+
+    const borderGrad = tCtx.createLinearGradient(0, 0, 1024, 0);
+    borderGrad.addColorStop(0, '#ff75a0'); borderGrad.addColorStop(0.5, '#7209b7'); borderGrad.addColorStop(1, '#4ea8de');
+    tCtx.lineWidth = 10; tCtx.strokeStyle = borderGrad; tCtx.stroke();
+
+    const textGrad = tCtx.createLinearGradient(0, 0, 1024, 0);
+    textGrad.addColorStop(0, '#ff85a1'); textGrad.addColorStop(0.5, '#f72585'); textGrad.addColorStop(1, '#4cc9f0');
+
+    tCtx.shadowColor = 'rgba(247, 37, 133, 0.8)'; tCtx.shadowBlur = 25;
+    tCtx.font = '900 62px "Segoe UI", sans-serif';
+    tCtx.fillStyle = textGrad; tCtx.textAlign = 'center'; tCtx.textBaseline = 'middle';
+    tCtx.fillText('Mini Exhibition of Feelings', 512, 160);
+
+    const titleTexture = new THREE.CanvasTexture(titleCanvas);
+    const titleMat = new THREE.MeshBasicMaterial({ map: titleTexture, transparent: true });
+
+    const titlePlaneFront = new THREE.Mesh(new THREE.PlaneGeometry(32, 10), titleMat);
+    titlePlaneFront.position.z = 0.05;
+    centerTitleGroup.add(titlePlaneFront);
+
+    const titlePlaneBack = new THREE.Mesh(new THREE.PlaneGeometry(32, 10), titleMat);
+    titlePlaneBack.position.z = -0.05; titlePlaneBack.rotation.y = Math.PI;
+    centerTitleGroup.add(titlePlaneBack);
+
+    scene.add(centerTitleGroup);
+
+    // --- 6. 3D SLOTH MODEL ---
+    const slothGroup = new THREE.Group();
+    const bodyMat = new THREE.MeshStandardMaterial({ color: 0x7f5539, roughness: 0.9 });
+    const faceMat = new THREE.MeshStandardMaterial({ color: 0xede0d4, roughness: 0.6 });
+    const patchMat = new THREE.MeshStandardMaterial({ color: 0x4a2e18 });
+    const noseMat = new THREE.MeshStandardMaterial({ color: 0x101010 });
+    const clawMat = new THREE.MeshStandardMaterial({ color: 0xcccccc, roughness: 0.3 });
+
+    const bodyMesh = new THREE.Mesh(new THREE.BoxGeometry(1.6, 2.0, 1.4), bodyMat);
+    bodyMesh.position.y = 1.2; bodyMesh.castShadow = true;
+    slothGroup.add(bodyMesh);
+
+    const headMesh = new THREE.Mesh(new THREE.BoxGeometry(1.3, 1.2, 1.2), bodyMat);
+    headMesh.position.set(0, 2.5, 0.1); headMesh.castShadow = true;
+    slothGroup.add(headMesh);
+
+    const faceMesh = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.9, 0.1), faceMat);
+    faceMesh.position.set(0, 2.45, 0.71);
+    slothGroup.add(faceMesh);
+
+    const eyePatchL = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.3, 0.12), patchMat);
+    eyePatchL.position.set(-0.3, 2.5, 0.72);
+    slothGroup.add(eyePatchL);
+
+    const eyePatchR = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.3, 0.12), patchMat);
+    eyePatchR.position.set(0.3, 2.5, 0.72);
+    slothGroup.add(eyePatchR);
+
+    const noseMesh = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.2, 0.15), noseMat);
+    noseMesh.position.set(0, 2.35, 0.75);
+    slothGroup.add(noseMesh);
+
+    function addArm(isRight) {
+      const armGroup = new THREE.Group();
+      const arm = new THREE.Mesh(new THREE.BoxGeometry(0.45, 1.6, 0.45), bodyMat);
+      arm.position.y = -0.6; arm.castShadow = true;
+      armGroup.add(arm);
+
+      for(let i = -1; i <= 1; i++) {
+        const claw = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.35, 0.08), clawMat);
+        claw.position.set(i * 0.12, -1.5, 0.1); claw.rotation.x = -0.3;
+        armGroup.add(claw);
+      }
+      armGroup.position.set(isRight ? 0.95 : -0.95, 1.8, 0.2);
+      armGroup.rotation.z = isRight ? -0.2 : 0.2;
+      slothGroup.add(armGroup);
+    }
+    addArm(false); addArm(true);
+
+    function addLeg(isRight) {
+      const leg = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.8, 0.5), bodyMat);
+      leg.position.set(isRight ? 0.55 : -0.55, 0.4, 0); leg.castShadow = true;
+      slothGroup.add(leg);
+    }
+    addLeg(false); addLeg(true);
+
+    // --- OVERHEAD UI SYSTEM ---
+    const overheadCanvas = document.createElement('canvas');
+    overheadCanvas.width = 512; overheadCanvas.height = 256;
+    const overheadCtx = overheadCanvas.getContext('2d');
+    const overheadTexture = new THREE.CanvasTexture(overheadCanvas);
+    const overheadSprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: overheadTexture }));
+    overheadSprite.position.set(0, 4.6, 0); overheadSprite.scale.set(5.5, 2.75, 1);
+    slothGroup.add(overheadSprite);
+
+    let currentPlayerName = "Sloth";
+    let currentChatMessage = "";
+    let chatMessageTimeout = null;
+    let isMicActive = false;
+
+    function renderOverheadUI() {
+      overheadCtx.clearRect(0, 0, 512, 256);
+
+      if (currentChatMessage !== "") {
+        overheadCtx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+        overheadCtx.beginPath(); overheadCtx.roundRect(30, 10, 452, 90, 16); overheadCtx.fill();
+        overheadCtx.lineWidth = 4; overheadCtx.strokeStyle = '#ff75a0'; overheadCtx.stroke();
+
+        overheadCtx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+        overheadCtx.beginPath(); overheadCtx.moveTo(246, 100); overheadCtx.lineTo(256, 115); overheadCtx.lineTo(266, 100); overheadCtx.fill();
+
+        overheadCtx.font = 'bold 28px "Segoe UI", sans-serif';
+        overheadCtx.fillStyle = '#1a1838'; overheadCtx.textAlign = 'center'; overheadCtx.textBaseline = 'middle';
+        overheadCtx.fillText(currentChatMessage, 256, 55);
+      }
+
+      if (currentPlayerName.length > 0 && currentPlayerName.length <= 7) {
+        overheadCtx.fillStyle = 'rgba(15, 10, 25, 0.85)';
+        overheadCtx.beginPath(); overheadCtx.roundRect(40, 140, 432, 80, 20); overheadCtx.fill();
+        overheadCtx.lineWidth = 4; overheadCtx.strokeStyle = isMicActive ? '#4ea8de' : '#ff75a0'; overheadCtx.stroke();
+
+        overheadCtx.font = 'bold 38px "Segoe UI", sans-serif';
+        overheadCtx.fillStyle = '#ffffff'; overheadCtx.textAlign = 'center'; overheadCtx.textBaseline = 'middle';
+        const displayName = isMicActive ? `🎙️ ${currentPlayerName}` : currentPlayerName;
+        overheadCtx.fillText(displayName, 256, 180);
+      }
+
+      overheadTexture.needsUpdate = true;
+    }
+
+    const nameInput = document.getElementById('player-name-input');
+    nameInput.addEventListener('input', (e) => {
+      currentPlayerName = e.target.value.trim();
+      renderOverheadUI();
+    });
+
+    renderOverheadUI();
+    scene.add(slothGroup);
+
+    // --- 7. GENERATE 28 BIG CHECK-IN SIGNS ---
+    const signs = [];
+    let playerCheckedInSignIndex = null;
+    const signPositions = [];
+
+    const spacing = 30;
+    const edgeOffset = 120;
+
+    for (let i = -3; i <= 3; i++) signPositions.push({ x: i * spacing, z: -edgeOffset, ry: 0 }); 
+    for (let i = -3; i <= 3; i++) signPositions.push({ x: edgeOffset, z: i * spacing, ry: -Math.PI / 2 }); 
+    for (let i = 3; i >= -3; i--) signPositions.push({ x: i * spacing, z: edgeOffset, ry: Math.PI }); 
+    for (let i = 3; i >= -3; i--) signPositions.push({ x: -edgeOffset, z: i * spacing, ry: Math.PI / 2 }); 
+
+    const MAX_BOARD_LINES = 7;
+    const MAX_LINE_WIDTH = 980;
+
+    function getWrappedLines(ctx, text, maxWidth) {
+      const chars = text.split('');
+      let lines = [];
+      let currentLine = '';
+      for (let i = 0; i < chars.length; i++) {
+        let testLine = currentLine + chars[i];
+        if (ctx.measureText(testLine).width > maxWidth && i > 0) {
+          lines.push(currentLine);
+          currentLine = chars[i];
+        } else {
+          currentLine = testLine;
+        }
+      }
+      if (currentLine) lines.push(currentLine);
+      return lines;
+    }
+
+    function createSignBoard(config, index) {
+      const group = new THREE.Group();
+      group.position.set(config.x, 0, config.z);
+      group.rotation.y = config.ry;
+
+      const poleGeo = new THREE.CylinderGeometry(0.35, 0.35, 12);
+      const poleMat = new THREE.MeshStandardMaterial({ color: 0x222222 });
+      const pole1 = new THREE.Mesh(poleGeo, poleMat); pole1.position.set(-9, 6, -0.4);
+      const pole2 = new THREE.Mesh(poleGeo, poleMat); pole2.position.set(9, 6, -0.4);
+      group.add(pole1); group.add(pole2);
+
+      const boardGeo = new THREE.BoxGeometry(22, 14, 0.6);
+      
+      const canvas = document.createElement('canvas');
+      canvas.width = 1100; canvas.height = 700;
+      const ctx = canvas.getContext('2d');
+      const texture = new THREE.CanvasTexture(canvas);
+
+      const boardMatFront = new THREE.MeshStandardMaterial({ map: texture, roughness: 0.3 });
+      const boardMatSide = new THREE.MeshStandardMaterial({ color: 0x140e28 });
+
+      const materials = [boardMatSide, boardMatSide, boardMatSide, boardMatSide, boardMatFront, boardMatSide];
+      const board = new THREE.Mesh(boardGeo, materials);
+      board.position.y = 11;
+      board.castShadow = true;
+      group.add(board);
+
+      scene.add(group);
+
+      const signData = {
+        index: index,
+        group: group,
+        canvas: canvas,
+        ctx: ctx,
+        texture: texture,
+        ownerId: null,
+        ownerName: "",
+        message: "",
+        position: new THREE.Vector3(config.x, 0, config.z)
+      };
+
+      signs.push(signData);
+      renderSignText(signData);
+    }
+
+    function renderSignText(sign) {
+      const ctx = sign.ctx;
+      ctx.clearRect(0, 0, 1100, 700);
+
+      ctx.fillStyle = sign.ownerId ? '#1a103c' : '#0b1329';
+      ctx.fillRect(0, 0, 1100, 700);
+
+      ctx.lineWidth = 16;
+      ctx.strokeStyle = sign.ownerId ? '#ff75a0' : '#4ea8de';
+      ctx.strokeRect(8, 8, 1084, 684);
+
+      const signNumStr = `SIGN #${String(sign.index + 1).padStart(2, '0')}`;
+      ctx.font = 'bold 36px "Segoe UI", Tahoma, sans-serif';
+      ctx.fillStyle = '#ff75a0';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'top';
+      ctx.fillText(signNumStr, 35, 30);
+
+      if (sign.ownerId) {
+        const badgeW = 420;
+        const badgeH = 65;
+        const badgeX = (1100 - badgeW) / 2;
+        const badgeY = 25;
+
+        ctx.fillStyle = 'rgba(15, 10, 30, 0.85)';
+        ctx.beginPath();
+        ctx.roundRect(badgeX, badgeY, badgeW, badgeH, 30);
+        ctx.fill();
+
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = '#ff75a0';
+        ctx.stroke();
+
+        ctx.font = 'bold 38px "Segoe UI", Tahoma, sans-serif';
+        ctx.fillStyle = '#ffffff';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(sign.ownerName, 550, badgeY + (badgeH / 2));
+
+        ctx.font = '40px "Segoe UI", Tahoma, sans-serif';
+        ctx.fillStyle = '#ffffff';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'alphabetical';
+
+        const lines = getWrappedLines(ctx, sign.message, MAX_LINE_WIDTH);
+        let startY = 175;
+        const lineHeight = 58;
+
+        lines.forEach((lineText, idx) => {
+          ctx.fillText(lineText, 60, startY + (idx * lineHeight));
+        });
+
+      } else {
+        ctx.font = 'bold 68px "Segoe UI", Tahoma, sans-serif';
+        ctx.fillStyle = '#4ea8de';
+        ctx.textAlign = 'center';
+        ctx.fillText(`[ ป้ายว่าง #${sign.index + 1} ]`, 550, 310);
+        
+        ctx.font = '36px "Segoe UI", Tahoma, sans-serif';
+        ctx.fillStyle = '#a0c4ff';
+        ctx.fillText('เดินเข้ามาใกล้ๆ เพื่อเช็คอินที่นี่', 550, 410);
+      }
+
+      sign.texture.needsUpdate = true;
+    }
+
+    signPositions.forEach((pos, idx) => createSignBoard(pos, idx));
+
+    // --- 8. CHAT & MIC SYSTEM ---
+    const chatInput = document.getElementById('chat-input');
+    const btnSend = document.getElementById('btn-send');
+    const btnMic = document.getElementById('btn-mic');
+    const chatHistory = document.getElementById('chat-history');
+
+    function escapeHTML(str) {
+      return str.replace(/[&<>'"]/g, 
+        tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag));
+    }
+
+    function addMessageToHistory(author, message) {
+      const msgDiv = document.createElement('div');
+      msgDiv.className = 'chat-msg';
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      msgDiv.innerHTML = `<span class="author">${escapeHTML(author)}:</span> ${escapeHTML(message)} <span class="time">${timeStr}</span>`;
+      chatHistory.appendChild(msgDiv);
+      chatHistory.scrollTop = chatHistory.scrollHeight;
+    }
+
+    function sendChatMessage() {
+      const msg = chatInput.value.trim();
+      if (msg !== "") {
+        addMessageToHistory(currentPlayerName || "Sloth", msg);
+
+        currentChatMessage = msg.length > 24 ? msg.substring(0, 22) + "..." : msg;
+        renderOverheadUI();
+
+        if (chatMessageTimeout) clearTimeout(chatMessageTimeout);
+        chatMessageTimeout = setTimeout(() => {
+          currentChatMessage = "";
+          renderOverheadUI();
+        }, 5000);
+
+        chatInput.value = "";
+      }
+    }
+
+    btnSend.addEventListener('click', sendChatMessage);
+    chatInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') sendChatMessage();
+    });
+
+    btnMic.addEventListener('click', () => {
+      isMicActive = !isMicActive;
+      btnMic.classList.toggle('active', isMicActive);
+      renderOverheadUI();
+    });
+
+    // --- 9. INTERACTION LOGIC ---
+    const checkinBtn = document.getElementById('checkin-prompt');
+    const checkinStatusText = document.getElementById('checkin-status');
+    const zoneStatusText = document.getElementById('zone-status');
+    const warpNotice = document.getElementById('warp-notice');
+    let nearbySign = null;
+
+    checkinBtn.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      if (!nearbySign) return;
+
+      if (nearbySign.ownerId !== null && nearbySign.ownerId !== "my_player_id") {
+        alert(`❌ ป้ายนี้ถูกเช็คอินแล้วโดย "${nearbySign.ownerName}"`);
+        return;
+      }
+
+      if (nearbySign.ownerId === null && playerCheckedInSignIndex !== null) {
+        alert(`⚠️ คุณได้เช็คอินไว้ที่ "ป้าย #${playerCheckedInSignIndex + 1}" แล้ว`);
+        return;
+      }
+
+      const currentMsg = nearbySign.message || "เขียนความรู้สึกของคุณลงบนป้ายนี้ได้เลย...";
+      let userText = prompt(`พิมพ์ข้อความบนป้าย #${nearbySign.index + 1} (เขียนได้สูงสุด 7 บรรทัดเต็มป้าย):`, currentMsg);
+
+      if (userText !== null && userText.trim() !== "") {
+        const trimmedText = userText.trim();
+        
+        const tempCtx = nearbySign.ctx;
+        tempCtx.font = '40px "Segoe UI", Tahoma, sans-serif';
+        const calculatedLines = getWrappedLines(tempCtx, trimmedText, MAX_LINE_WIDTH);
+
+        if (calculatedLines.length > MAX_BOARD_LINES) {
+          alert(`❌ ไม่สามารถส่งได้! ข้อความของคุณยาวเกินขนาดป้าย\n(ข้อความยาว ${calculatedLines.length} บรรทัด แต่ป้ายรองรับได้สูงสุด 7 บรรทัด)\n\nกรุณาย่อข้อความแล้วลองส่งใหม่อีกครั้งครับ`);
+          return;
+        }
+
+        nearbySign.ownerId = "my_player_id";
+        nearbySign.ownerName = currentPlayerName || "ผู้เล่น";
+        nearbySign.message = trimmedText;
+        playerCheckedInSignIndex = nearbySign.index;
+
+        renderSignText(nearbySign);
+        checkinStatusText.innerText = `เช็คอินแล้วที่ ป้าย #${nearbySign.index + 1}`;
+        checkinStatusText.style.color = "#4ea8de";
+        alert("✅ ส่งข้อความและเช็คอินสำเร็จเรียบร้อย!");
+      }
+    });
+
+    // --- 10. CONTROLS LOGIC ---
+    const joystickBase = document.getElementById('joystick-base');
+    const joystickKnob = document.getElementById('joystick-knob');
+    let joyInputX = 0, joyInputY = 0;
+    let joystickActive = false;
+
+    function handleJoystickMove(clientX, clientY) {
+      const rect = joystickBase.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+      let deltaX = clientX - centerX;
+      let deltaY = clientY - centerY;
+      let dist = Math.hypot(deltaX, deltaY);
+      const maxRadius = 40;
+
+      if (dist > maxRadius) {
+        deltaX = (deltaX / dist) * maxRadius;
+        deltaY = (deltaY / dist) * maxRadius;
+      }
+
+      joystickKnob.style.transform = `translate(calc(-50% + ${deltaX}px), calc(-50% + ${deltaY}px))`;
+      joyInputX = deltaX / maxRadius;
+      joyInputY = deltaY / maxRadius;
+    }
+
+    function resetJoystick() {
+      joystickActive = false;
+      joyInputX = 0; joyInputY = 0;
+      joystickKnob.style.transform = `translate(-50%, -50%)`;
+    }
+
+    joystickBase.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      joystickActive = true;
+      joystickBase.setPointerCapture(e.pointerId);
+      handleJoystickMove(e.clientX, e.clientY);
+    });
+    joystickBase.addEventListener('pointermove', (e) => {
+      if (joystickActive) handleJoystickMove(e.clientX, e.clientY);
+    });
+    joystickBase.addEventListener('pointerup', resetJoystick);
+    joystickBase.addEventListener('pointercancel', resetJoystick);
+
+    let velocityY = 0;
+    const gravity = 0.018;
+    const JUMP_FORCE = 0.48;
+    let isGrounded = true;
+
+    const keys = { w: false, a: false, s: false, d: false };
+    window.addEventListener('keydown', e => {
+      if (document.activeElement === nameInput || document.activeElement === chatInput) return;
+      if (['KeyW', 'ArrowUp'].includes(e.code)) keys.w = true;
+      if (['KeyS', 'ArrowDown'].includes(e.code)) keys.s = true;
+      if (['KeyA', 'ArrowLeft'].includes(e.code)) keys.a = true;
+      if (['KeyD', 'ArrowRight'].includes(e.code)) keys.d = true;
+      if (e.code === 'Space') jump();
+    });
+    window.addEventListener('keyup', e => {
+      if (['KeyW', 'ArrowUp'].includes(e.code)) keys.w = false;
+      if (['KeyS', 'ArrowDown'].includes(e.code)) keys.s = false;
+      if (['KeyA', 'ArrowLeft'].includes(e.code)) keys.a = false;
+      if (['KeyD', 'ArrowRight'].includes(e.code)) keys.d = false;
+    });
+
+    let cameraYaw = 0, cameraPitch = 0.4;
+    let isDraggingCam = false, prevCamX = 0, prevCamY = 0;
+
+    window.addEventListener('pointerdown', e => {
+      if (e.target.closest('#joystick-base') || e.target.closest('.btn-jump') || 
+          e.target.closest('#checkin-prompt') || e.target.closest('.hud-box') || 
+          e.target.closest('#chat-container') || e.target.closest('#chat-history') ||
+          e.target.closest('#btn-music') || e.target.closest('.name-input')) return;
+      isDraggingCam = true; prevCamX = e.clientX; prevCamY = e.clientY;
+    });
+
+    window.addEventListener('pointermove', e => {
+      if (!isDraggingCam) return;
+      cameraYaw -= (e.clientX - prevCamX) * 0.005;
+      cameraPitch = Math.max(0.05, Math.min(1.2, cameraPitch + (e.clientY - prevCamY) * 0.005));
+      prevCamX = e.clientX; prevCamY = e.clientY;
+    });
+
+    window.addEventListener('pointerup', () => isDraggingCam = false);
+
+    const jumpBtn = document.getElementById('btn-jump');
+    jumpBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); jump(); });
+
+    function jump() {
+      if (isGrounded) { velocityY = JUMP_FORCE; isGrounded = false; }
+    }
+
+    // --- 11. GAME LOOP ---
+    let timeAcc = 0;
+    function update() {
+      timeAcc += 0.03;
+
+      centerTitleGroup.position.y = 18 + Math.sin(timeAcc) * 0.6;
+      centerTitleGroup.rotation.y += 0.005;
+
+      portals.forEach(p => {
+        p.ringMesh.rotation.z += 0.03;
+        p.ringMesh.rotation.x = Math.PI / 2 + Math.sin(timeAcc * 2) * 0.1;
+      });
+
+      let inputForward = 0, inputRight = 0;
+      if (keys.w) inputForward += 1;
+      if (keys.s) inputForward -= 1;
+      if (keys.d) inputRight += 1;
+      if (keys.a) inputRight -= 1;
+
+      inputForward -= joyInputY;
+      inputRight += joyInputX;
+
+      const inputLen = Math.hypot(inputForward, inputRight);
+
+      if (inputLen > 0.05) {
+        const normF = inputForward / Math.max(1, inputLen);
+        const normR = inputRight / Math.max(1, inputLen);
+        const speed = 0.38 * Math.min(1, inputLen);
+
+        const moveX = (normF * -Math.sin(cameraYaw)) + (normR * Math.cos(cameraYaw));
+        const moveZ = (normF * -Math.cos(cameraYaw)) + (normR * -Math.sin(cameraYaw));
+
+        slothGroup.position.x += moveX * speed;
+        slothGroup.position.z += moveZ * speed;
+        slothGroup.rotation.y = Math.atan2(moveX, moveZ);
+      }
+
+      slothGroup.position.y += velocityY;
+      if (!isGrounded) velocityY -= gravity;
+
+      if (slothGroup.position.y <= 0) {
+        slothGroup.position.y = 0;
+        velocityY = 0;
+        isGrounded = true;
+      }
+
+      if (inSmallRoom) {
+        const minX = SMALL_ROOM_OFFSET_X - SMALL_BOUNDARY;
+        const maxX = SMALL_ROOM_OFFSET_X + SMALL_BOUNDARY;
+        slothGroup.position.x = Math.max(minX, Math.min(maxX, slothGroup.position.x));
+        slothGroup.position.z = Math.max(-SMALL_BOUNDARY, Math.min(SMALL_BOUNDARY, slothGroup.position.z));
+      } else {
+        slothGroup.position.x = Math.max(-BOUNDARY, Math.min(BOUNDARY, slothGroup.position.x));
+        slothGroup.position.z = Math.max(-BOUNDARY, Math.min(BOUNDARY, slothGroup.position.z));
+      }
+
+      let nearAnyPortal = false;
+      for (let portal of portals) {
+        const dist = slothGroup.position.distanceTo(portal.pos);
+        if (dist < 4.5) {
+          nearAnyPortal = true;
+          if (!isWarping && exitedPortalYet) {
+            isWarping = true;
+            exitedPortalYet = false;
+            warpNotice.innerText = `🔮 กำลังวาร์ปไปยัง: ${portal.label}`;
+            warpNotice.style.opacity = '1';
+
+            setTimeout(() => {
+              slothGroup.position.copy(portal.targetPos);
+              inSmallRoom = (portal.targetPos.x > 300);
+              zoneStatusText.innerText = inSmallRoom ? "ห้องลับ (Secret Room)" : "ห้องจัดแสดงหลัก";
+              zoneStatusText.style.color = inSmallRoom ? "#f72585" : "#4ea8de";
+            }, 300);
+
+            setTimeout(() => {
+              warpNotice.style.opacity = '0';
+              isWarping = false;
+            }, 1200);
+          }
+          break;
+        }
+      }
+
+      if (!nearAnyPortal) {
+        let farFromAll = true;
+        for (let portal of portals) {
+          if (slothGroup.position.distanceTo(portal.pos) < 6) {
+            farFromAll = false;
+            break;
+          }
+        }
+        if (farFromAll) {
+          exitedPortalYet = true;
+        }
+      }
+
+      nearbySign = null;
+      for (let sign of signs) {
+        const dist = slothGroup.position.distanceTo(sign.position);
+        if (dist < 20) {
+          nearbySign = sign;
+          break;
+        }
+      }
+
+      if (nearbySign) {
+        checkinBtn.style.display = 'flex';
+        if (nearbySign.ownerId === "my_player_id") {
+          checkinBtn.innerText = `✏️ แก้ไขป้ายเช็คอิน #${nearbySign.index + 1}`;
+        } else if (nearbySign.ownerId !== null) {
+          checkinBtn.innerText = `🔒 ป้าย #${nearbySign.index + 1} (มีเจ้าของแล้ว)`;
+        } else {
+          checkinBtn.innerText = `📝 เช็คอินป้าย #${nearbySign.index + 1}`;
+        }
+      } else {
+        checkinBtn.style.display = 'none';
+      }
+
+      const camDist = 16;
+      let targetCamX = slothGroup.position.x + camDist * Math.sin(cameraYaw) * Math.cos(cameraPitch);
+      let targetCamY = slothGroup.position.y + camDist * Math.sin(cameraPitch) + 2;
+      let targetCamZ = slothGroup.position.z + camDist * Math.cos(cameraYaw) * Math.cos(cameraPitch);
+
+      if (inSmallRoom) {
+        const pad = 2.5;
+        const sMinX = SMALL_ROOM_OFFSET_X - SMALL_BOUNDARY + pad;
+        const sMaxX = SMALL_ROOM_OFFSET_X + SMALL_BOUNDARY - pad;
+        const sMinZ = -SMALL_BOUNDARY + pad;
+        const sMaxZ = SMALL_BOUNDARY - pad;
+        targetCamX = Math.max(sMinX, Math.min(sMaxX, targetCamX));
+        targetCamZ = Math.max(sMinZ, Math.min(sMaxZ, targetCamZ));
+        targetCamY = Math.max(1.2, Math.min(WALL_H - 1, targetCamY));
+      } else {
+        const pad = 3;
+        targetCamX = Math.max(-BOUNDARY + pad, Math.min(BOUNDARY - pad, targetCamX));
+        targetCamZ = Math.max(-BOUNDARY + pad, Math.min(BOUNDARY - pad, targetCamZ));
+        targetCamY = Math.max(1.2, Math.min(WALL_H - 1, targetCamY));
+      }
+
+      camera.position.set(targetCamX, targetCamY, targetCamZ);
+      camera.lookAt(slothGroup.position.x, slothGroup.position.y + 1.6, slothGroup.position.z);
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+      update();
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  </script>
+</body>
+</html>
