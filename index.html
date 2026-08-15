@@ -12,59 +12,57 @@
 
     #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
     
-    /* ย่อขนาด HUD ซ้ายบนสำหรับมือถือ */
+    /* HUD ซ้ายบน ขนาดจิ๋ว */
     .hud-box { 
-      position: absolute; top: 10px; left: 10px; 
-      background: rgba(20, 16, 38, 0.9); border: 1px solid #ff75a0; 
-      padding: 6px 10px; border-radius: 8px; color: #fff; font-size: 10px;
-      box-shadow: 0 0 8px rgba(255, 117, 160, 0.3); pointer-events: auto;
-      max-width: 170px;
+      position: absolute; top: 6px; left: 6px; 
+      background: rgba(20, 16, 38, 0.85); border: 1px solid #ff75a0; 
+      padding: 4px 8px; border-radius: 6px; color: #fff; font-size: 9px;
+      box-shadow: 0 0 6px rgba(255, 117, 160, 0.3); pointer-events: auto;
+      max-width: 135px;
     }
-    .hud-title { color: #4ea8de; font-weight: bold; font-size: 11px; margin-bottom: 2px; }
+    .hud-title { color: #4ea8de; font-weight: bold; font-size: 9.5px; margin-bottom: 1px; }
     
     .name-input {
       background: rgba(255, 255, 255, 0.15); border: 1px solid #4ea8de;
-      color: #fff; padding: 2px 6px; border-radius: 4px; width: 95px;
-      font-size: 10px; margin-top: 2px; outline: none; pointer-events: auto;
+      color: #fff; padding: 1px 4px; border-radius: 3px; width: 80px;
+      font-size: 9px; margin-top: 1px; outline: none; pointer-events: auto;
     }
 
     .btn-music {
-      position: absolute; top: 10px; right: 10px;
-      background: rgba(20, 16, 38, 0.9); border: 1px solid #ff75a0;
-      color: #fff; padding: 5px 10px; border-radius: 16px; font-size: 10px; font-weight: bold;
+      position: absolute; top: 6px; right: 6px;
+      background: rgba(20, 16, 38, 0.85); border: 1px solid #ff75a0;
+      color: #fff; padding: 3px 8px; border-radius: 12px; font-size: 9px; font-weight: bold;
       cursor: pointer; pointer-events: auto; z-index: 20;
-      box-shadow: 0 0 8px rgba(255, 117, 160, 0.3);
-      display: flex; align-items: center; gap: 4px;
+      box-shadow: 0 0 6px rgba(255, 117, 160, 0.3);
+      display: flex; align-items: center; gap: 3px;
     }
-    .btn-music.active { border-color: #4ea8de; box-shadow: 0 0 10px rgba(78, 168, 222, 0.5); }
+    .btn-music.active { border-color: #4ea8de; box-shadow: 0 0 8px rgba(78, 168, 222, 0.5); }
 
-    /* ย่อขนาดกล่องประวัติแชทลงมากๆ */
+    /* ประวัติแชทขนาดบางและเล็กมาก */
     #chat-history {
-      position: absolute; bottom: 58px; left: 50%;
+      position: absolute; bottom: 42px; left: 50%;
       transform: translateX(-50%);
-      width: 85%; max-width: 380px; height: 50px;
-      background: rgba(15, 10, 25, 0.85);
-      border: 1px solid rgba(78, 168, 222, 0.4);
-      border-radius: 8px; padding: 4px 8px;
+      width: 70%; max-width: 300px; height: 35px;
+      background: rgba(15, 10, 25, 0.8);
+      border: 1px solid rgba(78, 168, 222, 0.3);
+      border-radius: 6px; padding: 2px 6px;
       overflow-y: auto; pointer-events: auto;
-      display: flex; flex-direction: column; gap: 3px;
-      font-size: 10.5px; color: #fff;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
-      backdrop-filter: blur(4px);
+      display: flex; flex-direction: column; gap: 2px;
+      font-size: 9px; color: #fff;
+      backdrop-filter: blur(3px);
     }
-    #chat-history::-webkit-scrollbar { width: 4px; }
+    #chat-history::-webkit-scrollbar { width: 3px; }
     #chat-history::-webkit-scrollbar-thumb { background: #4ea8de; border-radius: 10px; }
     
-    .chat-msg { word-break: break-word; line-height: 1.3; animation: fadeIn 0.3s ease; }
+    .chat-msg { word-break: break-word; line-height: 1.2; }
     .chat-msg .author { color: #ff75a0; font-weight: bold; }
-    .chat-msg .time { color: #7209b7; font-size: 9px; margin-left: 4px; opacity: 0.8; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+    .chat-msg .time { color: #7209b7; font-size: 8px; margin-left: 3px; opacity: 0.8; }
 
     #chat-container {
-      position: absolute; bottom: 12px; left: 50%;
+      position: absolute; bottom: 6px; left: 50%;
       transform: translateX(-50%);
-      display: flex; align-items: center; gap: 6px;
-      width: 85%; max-width: 380px;
+      display: flex; align-items: center; gap: 4px;
+      width: 70%; max-width: 300px;
       pointer-events: auto; z-index: 20;
     }
 
@@ -72,99 +70,81 @@
       flex: 1;
       background: rgba(15, 10, 25, 0.9);
       border: 1px solid #4ea8de;
-      color: #fff; padding: 6px 12px; border-radius: 20px;
-      font-size: 11px; outline: none; pointer-events: auto;
-      box-shadow: 0 0 8px rgba(78, 168, 222, 0.3);
+      color: #fff; padding: 3px 8px; border-radius: 14px;
+      font-size: 9.5px; outline: none; height: 26px; pointer-events: auto;
     }
     .chat-input::placeholder { color: #a0a0c0; }
 
     .btn-send {
       background: #4ea8de; border: none; color: #fff;
-      padding: 6px 12px; border-radius: 16px; font-weight: bold;
-      cursor: pointer; font-size: 11px; pointer-events: auto;
-      box-shadow: 0 0 8px rgba(78, 168, 222, 0.4);
+      padding: 3px 8px; border-radius: 12px; font-weight: bold;
+      cursor: pointer; font-size: 9.5px; height: 26px; pointer-events: auto;
     }
-    .btn-send:active { transform: scale(0.95); }
 
     .btn-mic {
-      width: 32px; height: 32px; border-radius: 50%;
+      width: 26px; height: 26px; border-radius: 50%;
       background: rgba(20, 16, 38, 0.9); border: 1px solid #ff75a0;
-      color: #fff; font-size: 13px; display: flex;
+      color: #fff; font-size: 11px; display: flex;
       align-items: center; justify-content: center;
       cursor: pointer; flex-shrink: 0; pointer-events: auto;
-      box-shadow: 0 0 8px rgba(255, 117, 160, 0.3);
     }
-    .btn-mic.active {
-      background: #ff75a0;
-      animation: pulse-mic 1.2s infinite;
-    }
-    @keyframes pulse-mic { 0% { box-shadow: 0 0 0 0 rgba(255, 117, 160, 0.7); } 70% { box-shadow: 0 0 0 8px rgba(255, 117, 160, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 117, 160, 0); } }
+    .btn-mic.active { background: #ff75a0; }
 
+    /* Joystick ขนาดเล็ก */
     #joystick-base {
-      position: absolute; bottom: 25px; left: 20px;
-      width: 110px; height: 110px;
-      background: rgba(78, 168, 222, 0.2);
-      border: 2px solid rgba(255, 117, 160, 0.6);
+      position: absolute; bottom: 15px; left: 15px;
+      width: 80px; height: 80px;
+      background: rgba(78, 168, 222, 0.15);
+      border: 1.5px solid rgba(255, 117, 160, 0.5);
       border-radius: 50%;
       pointer-events: auto; touch-action: none; cursor: pointer; z-index: 20;
     }
     #joystick-knob {
       position: absolute; top: 50%; left: 50%;
-      width: 42px; height: 42px;
-      background: rgba(255, 117, 160, 0.9);
-      border: 2px solid #90e0ef;
+      width: 30px; height: 30px;
+      background: rgba(255, 117, 160, 0.85);
+      border: 1.5px solid #90e0ef;
       border-radius: 50%;
       transform: translate(-50%, -50%);
       pointer-events: none;
-      box-shadow: 0 0 10px rgba(255, 117, 160, 0.6);
     }
 
     .elevator-prompt {
-      position: absolute; bottom: 140px; right: 20px;
-      width: 55px; height: 55px;
+      position: absolute; bottom: 100px; right: 15px;
+      width: 42px; height: 42px;
       border-radius: 50%;
       background: rgba(76, 201, 240, 0.4);
-      border: 2px solid #4cc9f0;
-      color: #fff; font-size: 22px;
+      border: 1.5px solid #4cc9f0;
+      color: #fff; font-size: 16px;
       display: none; align-items: center; justify-content: center;
       pointer-events: auto; cursor: pointer; z-index: 20;
-      box-shadow: 0 0 12px rgba(76, 201, 240, 0.6);
-      animation: pulse 1.5s infinite;
     }
-    .elevator-prompt.sky {
-      background: rgba(247, 37, 133, 0.4);
-      border-color: #f72585;
-      box-shadow: 0 0 12px rgba(247, 37, 133, 0.6);
-    }
+    .elevator-prompt.sky { background: rgba(247, 37, 133, 0.4); border-color: #f72585; }
 
     .btn-jump { 
-      position: absolute; bottom: 70px; right: 20px; width: 55px; height: 55px; 
+      position: absolute; bottom: 50px; right: 15px; width: 42px; height: 42px; 
       border-radius: 50%; background: rgba(78, 168, 222, 0.4); 
-      border: 2px solid #4ea8de; color: #fff; font-size: 20px;
+      border: 1.5px solid #4ea8de; color: #fff; font-size: 16px;
       display: flex; align-items: center; justify-content: center;
       pointer-events: auto; cursor: pointer; z-index: 20;
-      box-shadow: 0 0 12px rgba(78, 168, 222, 0.4);
     }
     .btn-jump:active { background: rgba(255, 117, 160, 0.8); }
 
     #checkin-prompt {
-      position: absolute; bottom: 205px; right: 20px;
-      background: #ff75a0; border: 1.5px solid #fff; color: #fff;
-      padding: 8px 14px; border-radius: 25px; font-weight: bold; font-size: 11px;
+      position: absolute; bottom: 150px; right: 15px;
+      background: #ff75a0; border: 1px solid #fff; color: #fff;
+      padding: 5px 10px; border-radius: 18px; font-weight: bold; font-size: 9px;
       display: none; pointer-events: auto; cursor: pointer; z-index: 20;
-      box-shadow: 0 0 15px rgba(255, 117, 160, 0.8);
-      animation: pulse 1.5s infinite;
+      box-shadow: 0 0 8px rgba(255, 117, 160, 0.8);
       white-space: nowrap;
     }
-    @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
 
     #warp-notice {
       position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-      background: rgba(10, 5, 25, 0.9); border: 2px solid #7209b7;
-      color: #e0aaff; padding: 14px 28px; border-radius: 25px;
-      font-size: 18px; font-weight: bold; text-align: center;
-      pointer-events: none; opacity: 0; transition: opacity 0.4s ease; z-index: 30;
-      box-shadow: 0 0 25px rgba(114, 9, 183, 0.8);
+      background: rgba(10, 5, 25, 0.9); border: 1.5px solid #7209b7;
+      color: #e0aaff; padding: 10px 20px; border-radius: 20px;
+      font-size: 14px; font-weight: bold; text-align: center;
+      pointer-events: none; opacity: 0; transition: opacity 0.3s ease; z-index: 30;
     }
   </style>
 
@@ -179,12 +159,12 @@
   <div id="ui-layer">
     <div class="hud-box">
       <div class="hud-title">🐰 28 SIGNS</div>
-      <div>ตั้งชื่อ: <input type="text" id="player-name-input" class="name-input" value="Bunny" placeholder="ไม่เกิน 7 ตัว"></div>
-      <div style="margin-top:2px;">สถานะ: <span id="checkin-status" style="color:#ff85a1;">ยังไม่เช็คอิน</span></div>
-      <div style="margin-top:1px; font-size:9.5px; color:#4ea8de;">โซน: <span id="zone-status">ห้องจัดแสดงหลัก</span></div>
+      <div>ชื่อ: <input type="text" id="player-name-input" class="name-input" value="Bunny" placeholder="ไม่เกิน 7 ตัว"></div>
+      <div style="margin-top:1px;">สถานะ: <span id="checkin-status" style="color:#ff85a1;">ยังไม่เช็คอิน</span></div>
+      <div style="margin-top:1px; font-size:8.5px; color:#4ea8de;">โซน: <span id="zone-status">ห้องจัดแสดงหลัก</span></div>
     </div>
 
-    <button class="btn-music" id="btn-music">🔊 BGM: ปิดอยู่</button>
+    <button class="btn-music" id="btn-music">🔊 BGM: ปิด</button>
 
     <div id="chat-history">
       <div class="chat-msg"><span class="author">ระบบ:</span> ยินดีต้อนรับสู่นิทรรศการ!</div>
@@ -192,11 +172,11 @@
 
     <div id="chat-container">
       <button class="btn-mic" id="btn-mic" title="เปิด/ปิดไมค์">🎙️</button>
-      <input type="text" id="chat-input" class="chat-input" placeholder="พิมพ์ข้อความที่นี่...">
+      <input type="text" id="chat-input" class="chat-input" placeholder="พิมพ์ข้อความคุยที่นี่...">
       <button class="btn-send" id="btn-send">ส่ง</button>
     </div>
 
-    <div id="checkin-prompt">📝 กดเช็คอิน / แก้ไขป้าย</div>
+    <div id="checkin-prompt">📝 เช็คอิน / แก้ไขป้าย</div>
     <div id="elevator-prompt">🛗</div>
     <div id="joystick-base"><div id="joystick-knob"></div></div>
     <div class="btn-jump" id="btn-jump">🦘</div>
@@ -217,10 +197,10 @@
     function setMusicButton(playing) {
       isMusicPlaying = playing;
       if (playing) {
-        btnMusic.innerText = '🎶 BGM: เล่นอยู่ 🔊';
+        btnMusic.innerText = '🎶 BGM: เปิด 🔊';
         btnMusic.classList.add('active');
       } else {
-        btnMusic.innerText = '🔊 BGM: ปิดอยู่';
+        btnMusic.innerText = '🔊 BGM: ปิด';
         btnMusic.classList.remove('active');
       }
     }
@@ -236,7 +216,7 @@
         }
       } catch (err) {
         setMusicButton(false);
-        btnMusic.innerText = '⚠️ กดอีกครั้งเพื่อเปิด';
+        btnMusic.innerText = '⚠️ กดอีกครั้ง';
       }
     }
 
@@ -853,7 +833,7 @@
         nearbySign.message = userText.trim();
         playerCheckedInSignIndex = nearbySign.index;
         renderSignText(nearbySign);
-        checkinStatusText.innerText = `เช็คอินแล้วที่ ป้าย #${nearbySign.index + 1}`;
+        checkinStatusText.innerText = `เช็คอินที่ ป้าย #${nearbySign.index + 1}`;
         alert("✅ เช็คอินสำเร็จ!");
       }
     });
@@ -867,9 +847,9 @@
       let deltaX = clientX - (rect.left + rect.width / 2);
       let deltaY = clientY - (rect.top + rect.height / 2);
       let dist = Math.hypot(deltaX, deltaY);
-      if (dist > 35) { deltaX = (deltaX / dist) * 35; deltaY = (deltaY / dist) * 35; }
+      if (dist > 25) { deltaX = (deltaX / dist) * 25; deltaY = (deltaY / dist) * 25; }
       joystickKnob.style.transform = `translate(calc(-50% + ${deltaX}px), calc(-50% + ${deltaY}px))`;
-      joyInputX = deltaX / 35; joyInputY = deltaY / 35;
+      joyInputX = deltaX / 25; joyInputY = deltaY / 25;
     }
     function resetJoystick() { joystickActive = false; joyInputX = 0; joyInputY = 0; joystickKnob.style.transform = `translate(-50%, -50%)`; }
 
@@ -900,7 +880,6 @@
     
     window.addEventListener('pointerdown', e => {
       if (e.target.closest('#ui-layer')) return;
-      // ตรวจสอบว่าเป็นการสัมผัสในฝั่งขวาของหน้าจอหรือไม่
       if (e.clientX >= window.innerWidth / 2) {
         isDraggingCam = true; 
         prevCamX = e.clientX; 
@@ -960,10 +939,10 @@
 
       if (elevatorState === 'goingUp') {
         elevatorY = Math.min(ELEVATOR_TOP_Y, elevatorY + ELEVATOR_SPEED);
-        if (elevatorY >= ELEVATOR_TOP_Y) { elevatorY = ELEVATOR_TOP_Y; elevatorState = 'sky'; playerOnElevator = true; zoneStatusText.innerText = 'ลานดูดาวสูง 65 เมตร'; }
+        if (elevatorY >= ELEVATOR_TOP_Y) { elevatorY = ELEVATOR_TOP_Y; elevatorState = 'sky'; playerOnElevator = true; zoneStatusText.innerText = 'ลานดูดาว (65ม.)'; }
       } else if (elevatorState === 'goingDown') {
         elevatorY = Math.max(ELEVATOR_GROUND_Y, elevatorY - ELEVATOR_SPEED);
-        if (elevatorY <= ELEVATOR_GROUND_Y) { elevatorY = ELEVATOR_GROUND_Y; elevatorState = 'ground'; playerOnElevator = true; zoneStatusText.innerText = 'ห้องจัดแสดงหลัก'; }
+        if (elevatorY <= ELEVATOR_GROUND_Y) { elevatorY = ELEVATOR_GROUND_Y; elevatorState = 'ground'; playerOnElevator = true; zoneStatusText.innerText = 'ห้องหลัก'; }
       }
 
       elevatorGroup.position.y = elevatorY;
@@ -1011,7 +990,7 @@
               setTimeout(() => {
                 bunnyGroup.position.copy(portal.targetPos);
                 inSmallRoom = (portal.targetPos.x > 300);
-                zoneStatusText.innerText = inSmallRoom ? "ห้องลับ (Secret Room)" : "ห้องจัดแสดงหลัก";
+                zoneStatusText.innerText = inSmallRoom ? "ห้องลับ" : "ห้องหลัก";
               }, 300);
               setTimeout(() => { warpNotice.style.opacity = '0'; isWarping = false; }, 1200);
             }
@@ -1028,7 +1007,7 @@
 
       if (nearbySign) {
         checkinBtn.style.display = 'flex';
-        checkinBtn.innerText = nearbySign.ownerId === "my_player_id" ? `✏️ แก้ไขป้ายเช็คอิน #${nearbySign.index + 1}` : (nearbySign.ownerId !== null ? `🔒 ป้าย #${nearbySign.index + 1} (มีเจ้าของแล้ว)` : `📝 เช็คอินป้าย #${nearbySign.index + 1}`);
+        checkinBtn.innerText = nearbySign.ownerId === "my_player_id" ? `✏️ แก้ไขป้าย #${nearbySign.index + 1}` : (nearbySign.ownerId !== null ? `🔒 ป้าย #${nearbySign.index + 1} (มีเจ้าของ)` : `📝 เช็คอินป้าย #${nearbySign.index + 1}`);
       } else {
         checkinBtn.style.display = 'none';
       }
