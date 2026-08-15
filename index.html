@@ -12,145 +12,147 @@
 
     #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
     
+    /* ย่อขนาด HUD ซ้ายบนสำหรับมือถือ */
     .hud-box { 
-      position: absolute; top: 15px; left: 15px; 
-      background: rgba(20, 16, 38, 0.9); border: 1.5px solid #ff75a0; 
-      padding: 10px 16px; border-radius: 8px; color: #fff; font-size: 13px;
-      box-shadow: 0 0 10px rgba(255, 117, 160, 0.3); pointer-events: auto;
+      position: absolute; top: 10px; left: 10px; 
+      background: rgba(20, 16, 38, 0.9); border: 1px solid #ff75a0; 
+      padding: 6px 10px; border-radius: 8px; color: #fff; font-size: 10px;
+      box-shadow: 0 0 8px rgba(255, 117, 160, 0.3); pointer-events: auto;
+      max-width: 170px;
     }
-    .hud-title { color: #4ea8de; font-weight: bold; font-size: 15px; margin-bottom: 4px; }
+    .hud-title { color: #4ea8de; font-weight: bold; font-size: 11px; margin-bottom: 2px; }
     
     .name-input {
       background: rgba(255, 255, 255, 0.15); border: 1px solid #4ea8de;
-      color: #fff; padding: 4px 8px; border-radius: 4px; width: 140px;
-      font-size: 12px; margin-top: 4px; outline: none; pointer-events: auto;
+      color: #fff; padding: 2px 6px; border-radius: 4px; width: 95px;
+      font-size: 10px; margin-top: 2px; outline: none; pointer-events: auto;
     }
 
     .btn-music {
-      position: absolute; top: 15px; right: 15px;
-      background: rgba(20, 16, 38, 0.9); border: 1.5px solid #ff75a0;
-      color: #fff; padding: 8px 14px; border-radius: 20px; font-size: 13px; font-weight: bold;
+      position: absolute; top: 10px; right: 10px;
+      background: rgba(20, 16, 38, 0.9); border: 1px solid #ff75a0;
+      color: #fff; padding: 5px 10px; border-radius: 16px; font-size: 10px; font-weight: bold;
       cursor: pointer; pointer-events: auto; z-index: 20;
-      box-shadow: 0 0 10px rgba(255, 117, 160, 0.3);
-      display: flex; align-items: center; gap: 6px;
+      box-shadow: 0 0 8px rgba(255, 117, 160, 0.3);
+      display: flex; align-items: center; gap: 4px;
     }
-    .btn-music.active { border-color: #4ea8de; box-shadow: 0 0 12px rgba(78, 168, 222, 0.5); }
+    .btn-music.active { border-color: #4ea8de; box-shadow: 0 0 10px rgba(78, 168, 222, 0.5); }
 
+    /* ย่อขนาดกล่องประวัติแชทลงมากๆ */
     #chat-history {
-      position: absolute; bottom: 75px; left: 50%;
+      position: absolute; bottom: 58px; left: 50%;
       transform: translateX(-50%);
-      width: 90%; max-width: 480px; height: 130px;
+      width: 85%; max-width: 380px; height: 50px;
       background: rgba(15, 10, 25, 0.85);
       border: 1px solid rgba(78, 168, 222, 0.4);
-      border-radius: 12px; padding: 10px 14px;
+      border-radius: 8px; padding: 4px 8px;
       overflow-y: auto; pointer-events: auto;
-      display: flex; flex-direction: column; gap: 6px;
-      font-size: 13px; color: #fff;
+      display: flex; flex-direction: column; gap: 3px;
+      font-size: 10.5px; color: #fff;
       box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
       backdrop-filter: blur(4px);
     }
-    #chat-history::-webkit-scrollbar { width: 5px; }
+    #chat-history::-webkit-scrollbar { width: 4px; }
     #chat-history::-webkit-scrollbar-thumb { background: #4ea8de; border-radius: 10px; }
     
-    .chat-msg { word-break: break-word; line-height: 1.4; animation: fadeIn 0.3s ease; }
+    .chat-msg { word-break: break-word; line-height: 1.3; animation: fadeIn 0.3s ease; }
     .chat-msg .author { color: #ff75a0; font-weight: bold; }
-    .chat-msg .time { color: #7209b7; font-size: 10px; margin-left: 6px; opacity: 0.8; }
+    .chat-msg .time { color: #7209b7; font-size: 9px; margin-left: 4px; opacity: 0.8; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
 
     #chat-container {
-      position: absolute; bottom: 20px; left: 50%;
+      position: absolute; bottom: 12px; left: 50%;
       transform: translateX(-50%);
-      display: flex; align-items: center; gap: 8px;
-      width: 90%; max-width: 480px;
+      display: flex; align-items: center; gap: 6px;
+      width: 85%; max-width: 380px;
       pointer-events: auto; z-index: 20;
     }
 
     .chat-input {
       flex: 1;
       background: rgba(15, 10, 25, 0.9);
-      border: 1.5px solid #4ea8de;
-      color: #fff; padding: 10px 16px; border-radius: 25px;
-      font-size: 14px; outline: none; pointer-events: auto;
-      box-shadow: 0 0 10px rgba(78, 168, 222, 0.3);
+      border: 1px solid #4ea8de;
+      color: #fff; padding: 6px 12px; border-radius: 20px;
+      font-size: 11px; outline: none; pointer-events: auto;
+      box-shadow: 0 0 8px rgba(78, 168, 222, 0.3);
     }
     .chat-input::placeholder { color: #a0a0c0; }
 
     .btn-send {
       background: #4ea8de; border: none; color: #fff;
-      padding: 10px 18px; border-radius: 20px; font-weight: bold;
-      cursor: pointer; font-size: 13px; pointer-events: auto;
-      box-shadow: 0 0 10px rgba(78, 168, 222, 0.4);
+      padding: 6px 12px; border-radius: 16px; font-weight: bold;
+      cursor: pointer; font-size: 11px; pointer-events: auto;
+      box-shadow: 0 0 8px rgba(78, 168, 222, 0.4);
     }
     .btn-send:active { transform: scale(0.95); }
 
     .btn-mic {
-      width: 42px; height: 42px; border-radius: 50%;
-      background: rgba(20, 16, 38, 0.9); border: 1.5px solid #ff75a0;
-      color: #fff; font-size: 18px; display: flex;
+      width: 32px; height: 32px; border-radius: 50%;
+      background: rgba(20, 16, 38, 0.9); border: 1px solid #ff75a0;
+      color: #fff; font-size: 13px; display: flex;
       align-items: center; justify-content: center;
       cursor: pointer; flex-shrink: 0; pointer-events: auto;
-      box-shadow: 0 0 10px rgba(255, 117, 160, 0.3);
+      box-shadow: 0 0 8px rgba(255, 117, 160, 0.3);
     }
     .btn-mic.active {
       background: #ff75a0;
       animation: pulse-mic 1.2s infinite;
     }
-    @keyframes pulse-mic { 0% { box-shadow: 0 0 0 0 rgba(255, 117, 160, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(255, 117, 160, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 117, 160, 0); } }
+    @keyframes pulse-mic { 0% { box-shadow: 0 0 0 0 rgba(255, 117, 160, 0.7); } 70% { box-shadow: 0 0 0 8px rgba(255, 117, 160, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 117, 160, 0); } }
 
     #joystick-base {
-      position: absolute; bottom: 35px; left: 35px;
-      width: 130px; height: 130px;
+      position: absolute; bottom: 25px; left: 20px;
+      width: 110px; height: 110px;
       background: rgba(78, 168, 222, 0.2);
-      border: 3px solid rgba(255, 117, 160, 0.6);
+      border: 2px solid rgba(255, 117, 160, 0.6);
       border-radius: 50%;
       pointer-events: auto; touch-action: none; cursor: pointer; z-index: 20;
     }
     #joystick-knob {
       position: absolute; top: 50%; left: 50%;
-      width: 50px; height: 50px;
+      width: 42px; height: 42px;
       background: rgba(255, 117, 160, 0.9);
       border: 2px solid #90e0ef;
       border-radius: 50%;
       transform: translate(-50%, -50%);
       pointer-events: none;
-      box-shadow: 0 0 12px rgba(255, 117, 160, 0.6);
+      box-shadow: 0 0 10px rgba(255, 117, 160, 0.6);
     }
 
-    /* ปรับปุ่มลิฟต์ให้เป็นวงกลมบริเวณมุมขวาล่าง */
     .elevator-prompt {
-      position: absolute; bottom: 170px; right: 35px;
-      width: 70px; height: 70px;
+      position: absolute; bottom: 140px; right: 20px;
+      width: 55px; height: 55px;
       border-radius: 50%;
       background: rgba(76, 201, 240, 0.4);
       border: 2px solid #4cc9f0;
-      color: #fff; font-size: 26px;
+      color: #fff; font-size: 22px;
       display: none; align-items: center; justify-content: center;
       pointer-events: auto; cursor: pointer; z-index: 20;
-      box-shadow: 0 0 15px rgba(76, 201, 240, 0.6);
+      box-shadow: 0 0 12px rgba(76, 201, 240, 0.6);
       animation: pulse 1.5s infinite;
     }
     .elevator-prompt.sky {
       background: rgba(247, 37, 133, 0.4);
       border-color: #f72585;
-      box-shadow: 0 0 15px rgba(247, 37, 133, 0.6);
+      box-shadow: 0 0 12px rgba(247, 37, 133, 0.6);
     }
 
     .btn-jump { 
-      position: absolute; bottom: 85px; right: 35px; width: 70px; height: 70px; 
+      position: absolute; bottom: 70px; right: 20px; width: 55px; height: 55px; 
       border-radius: 50%; background: rgba(78, 168, 222, 0.4); 
-      border: 2px solid #4ea8de; color: #fff; font-size: 24px;
+      border: 2px solid #4ea8de; color: #fff; font-size: 20px;
       display: flex; align-items: center; justify-content: center;
       pointer-events: auto; cursor: pointer; z-index: 20;
-      box-shadow: 0 0 15px rgba(78, 168, 222, 0.4);
+      box-shadow: 0 0 12px rgba(78, 168, 222, 0.4);
     }
     .btn-jump:active { background: rgba(255, 117, 160, 0.8); }
 
     #checkin-prompt {
-      position: absolute; bottom: 250px; right: 35px;
-      background: #ff75a0; border: 2px solid #fff; color: #fff;
-      padding: 10px 18px; border-radius: 30px; font-weight: bold; font-size: 13px;
+      position: absolute; bottom: 205px; right: 20px;
+      background: #ff75a0; border: 1.5px solid #fff; color: #fff;
+      padding: 8px 14px; border-radius: 25px; font-weight: bold; font-size: 11px;
       display: none; pointer-events: auto; cursor: pointer; z-index: 20;
-      box-shadow: 0 0 20px rgba(255, 117, 160, 0.8);
+      box-shadow: 0 0 15px rgba(255, 117, 160, 0.8);
       animation: pulse 1.5s infinite;
       white-space: nowrap;
     }
@@ -159,10 +161,10 @@
     #warp-notice {
       position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
       background: rgba(10, 5, 25, 0.9); border: 2px solid #7209b7;
-      color: #e0aaff; padding: 18px 36px; border-radius: 30px;
-      font-size: 22px; font-weight: bold; text-align: center;
+      color: #e0aaff; padding: 14px 28px; border-radius: 25px;
+      font-size: 18px; font-weight: bold; text-align: center;
       pointer-events: none; opacity: 0; transition: opacity 0.4s ease; z-index: 30;
-      box-shadow: 0 0 30px rgba(114, 9, 183, 0.8);
+      box-shadow: 0 0 25px rgba(114, 9, 183, 0.8);
     }
   </style>
 
@@ -176,13 +178,13 @@
 
   <div id="ui-layer">
     <div class="hud-box">
-      <div class="hud-title">🐰 28 CHECK-IN SIGNS</div>
+      <div class="hud-title">🐰 28 SIGNS</div>
       <div>ตั้งชื่อ: <input type="text" id="player-name-input" class="name-input" value="Bunny" placeholder="ไม่เกิน 7 ตัว"></div>
-      <div style="margin-top:4px;">สถานะ: <span id="checkin-status" style="color:#ff85a1;">ยังไม่เช็คอิน</span></div>
-      <div style="margin-top:2px; font-size:11px; color:#4ea8de;">โซน: <span id="zone-status">ห้องจัดแสดงหลัก</span></div>
+      <div style="margin-top:2px;">สถานะ: <span id="checkin-status" style="color:#ff85a1;">ยังไม่เช็คอิน</span></div>
+      <div style="margin-top:1px; font-size:9.5px; color:#4ea8de;">โซน: <span id="zone-status">ห้องจัดแสดงหลัก</span></div>
     </div>
 
-    <button class="btn-music" id="btn-music">🔊 BGM: ปิดอยู่ (คลิกเปิดเพลง)</button>
+    <button class="btn-music" id="btn-music">🔊 BGM: ปิดอยู่</button>
 
     <div id="chat-history">
       <div class="chat-msg"><span class="author">ระบบ:</span> ยินดีต้อนรับสู่นิทรรศการ!</div>
@@ -190,7 +192,7 @@
 
     <div id="chat-container">
       <button class="btn-mic" id="btn-mic" title="เปิด/ปิดไมค์">🎙️</button>
-      <input type="text" id="chat-input" class="chat-input" placeholder="พิมพ์ข้อความคุยที่นี่...">
+      <input type="text" id="chat-input" class="chat-input" placeholder="พิมพ์ข้อความที่นี่...">
       <button class="btn-send" id="btn-send">ส่ง</button>
     </div>
 
@@ -215,10 +217,10 @@
     function setMusicButton(playing) {
       isMusicPlaying = playing;
       if (playing) {
-        btnMusic.innerText = '🎶 BGM: กำลังเล่นอยู่ 🔊';
+        btnMusic.innerText = '🎶 BGM: เล่นอยู่ 🔊';
         btnMusic.classList.add('active');
       } else {
-        btnMusic.innerText = '🔊 BGM: ปิดอยู่ (คลิกเปิดเพลง)';
+        btnMusic.innerText = '🔊 BGM: ปิดอยู่';
         btnMusic.classList.remove('active');
       }
     }
@@ -234,7 +236,7 @@
         }
       } catch (err) {
         setMusicButton(false);
-        btnMusic.innerText = '⚠️ กดปุ่มอีกครั้งเพื่อเปิดเพลง';
+        btnMusic.innerText = '⚠️ กดอีกครั้งเพื่อเปิด';
       }
     }
 
@@ -265,7 +267,7 @@
 
     const floor = new THREE.Mesh(
       new THREE.PlaneGeometry(ROOM_SIZE, ROOM_SIZE),
-      new THREE.MeshStandardMaterial({ color: 0x8093f1, roughness: 0.6 })
+      new THREE.MeshStandardMaterial({ color: 0x4da63b, roughness: 0.7 })
     );
     floor.rotation.x = -Math.PI / 2;
     floor.receiveShadow = true;
@@ -275,7 +277,7 @@
     grid.position.y = 0.01;
     scene.add(grid);
 
-    const wallMat = new THREE.MeshStandardMaterial({ color: 0xff85a1, roughness: 0.5 });
+    const wallMat = new THREE.MeshStandardMaterial({ color: 0xe0f2fe, roughness: 0.5 });
     function addWall(w, h, d, x, y, z) {
       const wall = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), wallMat);
       wall.position.set(x, y, z);
@@ -327,27 +329,65 @@
       starAreaGroup.add(light);
     }
 
-    const starSignCanvas = document.createElement('canvas');
-    starSignCanvas.width = 900; starSignCanvas.height = 240;
-    const starSignCtx = starSignCanvas.getContext('2d');
-    starSignCtx.fillStyle = 'rgba(10, 12, 35, 0.92)';
-    starSignCtx.roundRect(20, 20, 860, 200, 40);
-    starSignCtx.fill();
-    starSignCtx.strokeStyle = '#4cc9f0'; starSignCtx.lineWidth = 8; starSignCtx.stroke();
-    starSignCtx.font = '900 64px "Segoe UI", sans-serif';
-    starSignCtx.fillStyle = '#ffffff'; starSignCtx.textAlign = 'center'; starSignCtx.textBaseline = 'middle';
-    starSignCtx.fillText('✦ STAR VIEWING AREA ✦', 450, 105);
-    starSignCtx.font = 'bold 30px "Segoe UI", sans-serif';
-    starSignCtx.fillStyle = '#90e0ef';
-    starSignCtx.fillText('ลานดูดาวกลางนิทรรศการ', 450, 170);
+    function createDoubleSidedSign(width, height, drawFuncFront, drawFuncBack, posX, posY, posZ, rotY) {
+      const group = new THREE.Group();
+      group.position.set(posX, posY, posZ);
+      group.rotation.y = rotY;
 
-    const starSign = new THREE.Mesh(
-      new THREE.PlaneGeometry(16, 4.25),
-      new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(starSignCanvas), transparent: true })
+      const canvasFront = document.createElement('canvas');
+      canvasFront.width = 900; canvasFront.height = 240;
+      drawFuncFront(canvasFront.getContext('2d'));
+      const planeFront = new THREE.Mesh(
+        new THREE.PlaneGeometry(width, height),
+        new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(canvasFront), transparent: true })
+      );
+      planeFront.position.z = 0.02;
+      group.add(planeFront);
+
+      const canvasBack = document.createElement('canvas');
+      canvasBack.width = 900; canvasBack.height = 240;
+      drawFuncBack(canvasBack.getContext('2d'));
+      
+      const planeBack = new THREE.Mesh(
+        new THREE.PlaneGeometry(width, height),
+        new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(canvasBack), transparent: true })
+      );
+      planeBack.rotation.y = Math.PI;
+      planeBack.position.z = -0.02;
+      group.add(planeBack);
+
+      return group;
+    }
+
+    const starSignGroup = createDoubleSidedSign(
+      16, 4.25,
+      (ctx) => {
+        ctx.fillStyle = 'rgba(10, 12, 35, 0.92)';
+        ctx.roundRect(20, 20, 860, 200, 40);
+        ctx.fill();
+        ctx.strokeStyle = '#4cc9f0'; ctx.lineWidth = 8; ctx.stroke();
+        ctx.font = '900 64px "Segoe UI", sans-serif';
+        ctx.fillStyle = '#ffffff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText('✦ STAR VIEWING AREA ✦', 450, 105);
+        ctx.font = 'bold 30px "Segoe UI", sans-serif';
+        ctx.fillStyle = '#90e0ef';
+        ctx.fillText('ลานดูดาวกลางนิทรรศการ', 450, 170);
+      },
+      (ctx) => {
+        ctx.fillStyle = 'rgba(10, 12, 35, 0.92)';
+        ctx.roundRect(20, 20, 860, 200, 40);
+        ctx.fill();
+        ctx.strokeStyle = '#4cc9f0'; ctx.lineWidth = 8; ctx.stroke();
+        ctx.font = '900 64px "Segoe UI", sans-serif';
+        ctx.fillStyle = '#ffffff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText('✦ STAR VIEWING AREA ✦', 450, 105);
+        ctx.font = 'bold 30px "Segoe UI", sans-serif';
+        ctx.fillStyle = '#90e0ef';
+        ctx.fillText('ลานดูดาวกลางนิทรรศการ', 450, 170);
+      },
+      0, 4.2, -25, 0
     );
-    starSign.position.set(0, 4.2, -25);
-    starSign.rotation.y = Math.PI;
-    starAreaGroup.add(starSign);
+    starAreaGroup.add(starSignGroup);
 
     for (let i = 0; i < 8; i++) {
       const a = (i / 8) * Math.PI * 2;
@@ -409,18 +449,6 @@
     starGeometry.setAttribute('color', new THREE.Float32BufferAttribute(starColors, 3));
     const starField = new THREE.Points(starGeometry, new THREE.PointsMaterial({ size: 0.85, transparent: true, opacity: 0.9, vertexColors: true }));
     scene.add(starField);
-
-    const shootingStars = [];
-    for (let i = 0; i < 3; i++) {
-      const meteorGroup = new THREE.Group();
-      meteorGroup.add(new THREE.Mesh(new THREE.SphereGeometry(0.18, 8, 8), new THREE.MeshBasicMaterial({ color: 0xffffff })));
-      const tail = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.12, 5, 8), new THREE.MeshBasicMaterial({ color: 0x4cc9f0, transparent: true, opacity: 0.55 }));
-      tail.rotation.z = Math.PI / 3; tail.position.y = 2;
-      meteorGroup.add(tail);
-      meteorGroup.position.set(-55 + i * 45, 55 + i * 8, -45 - i * 12);
-      scene.add(meteorGroup);
-      shootingStars.push(meteorGroup);
-    }
 
     const ELEVATOR_X = 18;
     const ELEVATOR_Z = 0;
@@ -492,7 +520,7 @@
 
     const smallFloor = new THREE.Mesh(
       new THREE.PlaneGeometry(SMALL_ROOM_SIZE, SMALL_ROOM_SIZE),
-      new THREE.MeshStandardMaterial({ color: 0x2a0845, roughness: 0.4 })
+      new THREE.MeshStandardMaterial({ color: 0x3d8c32, roughness: 0.6 })
     );
     smallFloor.position.set(SMALL_ROOM_OFFSET_X, 0, 0);
     smallFloor.rotation.x = -Math.PI / 2;
@@ -502,7 +530,7 @@
     smallGrid.position.set(SMALL_ROOM_OFFSET_X, 0.01, 0);
     scene.add(smallGrid);
 
-    const smallWallMat = new THREE.MeshStandardMaterial({ color: 0x3a0ca3, roughness: 0.5 });
+    const smallWallMat = new THREE.MeshStandardMaterial({ color: 0xe0f2fe, roughness: 0.5 });
     function addSmallWall(w, h, d, x, y, z) {
       const wall = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), smallWallMat);
       wall.position.set(x, y, z);
@@ -551,23 +579,39 @@
 
     const centerTitleGroup = new THREE.Group();
     centerTitleGroup.position.set(0, 18, 0);
-    const titleCanvas = document.createElement('canvas');
-    titleCanvas.width = 1024; titleCanvas.height = 320;
-    const tCtx = titleCanvas.getContext('2d');
-    tCtx.fillStyle = 'rgba(20, 15, 38, 0.85)';
-    tCtx.beginPath(); tCtx.roundRect(20, 20, 984, 280, 50); tCtx.fill();
-    tCtx.lineWidth = 10; tCtx.strokeStyle = '#ff75a0'; tCtx.stroke();
-    tCtx.font = '900 62px "Segoe UI", sans-serif';
-    tCtx.fillStyle = '#f72585'; tCtx.textAlign = 'center'; tCtx.textBaseline = 'middle';
-    tCtx.fillText('Mini Exhibition of Feelings', 512, 160);
 
-    const titleTexture = new THREE.CanvasTexture(titleCanvas);
-    const titlePlaneFront = new THREE.Mesh(new THREE.PlaneGeometry(32, 10), new THREE.MeshBasicMaterial({ map: titleTexture, transparent: true }));
+    const drawTitleContent = (ctx) => {
+      ctx.fillStyle = 'rgba(20, 15, 38, 0.85)';
+      ctx.beginPath(); ctx.roundRect(20, 20, 984, 280, 50); ctx.fill();
+      ctx.lineWidth = 10; ctx.strokeStyle = '#ff75a0'; ctx.stroke();
+      ctx.font = '900 62px "Segoe UI", sans-serif';
+      ctx.fillStyle = '#f72585'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('Mini Exhibition of Feelings', 512, 160);
+    };
+
+    const tCanvasFront = document.createElement('canvas');
+    tCanvasFront.width = 1024; tCanvasFront.height = 320;
+    drawTitleContent(tCanvasFront.getContext('2d'));
+    const titlePlaneFront = new THREE.Mesh(
+      new THREE.PlaneGeometry(32, 10), 
+      new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(tCanvasFront), transparent: true })
+    );
     titlePlaneFront.position.z = 0.05;
     centerTitleGroup.add(titlePlaneFront);
+
+    const tCanvasBack = document.createElement('canvas');
+    tCanvasBack.width = 1024; tCanvasBack.height = 320;
+    drawTitleContent(tCanvasBack.getContext('2d'));
+    const titlePlaneBack = new THREE.Mesh(
+      new THREE.PlaneGeometry(32, 10), 
+      new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(tCanvasBack), transparent: true })
+    );
+    titlePlaneBack.rotation.y = Math.PI;
+    titlePlaneBack.position.z = -0.05;
+    centerTitleGroup.add(titlePlaneBack);
+
     scene.add(centerTitleGroup);
 
-    // --- 3D BUNNY MODEL ---
     const bunnyGroup = new THREE.Group();
     const bunnyBodyMat = new THREE.MeshStandardMaterial({ color: 0x90e0ef, roughness: 0.7 }); 
     const bunnyWhiteMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.6 });
@@ -671,7 +715,6 @@
     renderOverheadUI();
     scene.add(bunnyGroup);
 
-    // --- CHECK-IN SIGNS ---
     const signs = [];
     let playerCheckedInSignIndex = null;
     const signPositions = [];
@@ -755,7 +798,6 @@
 
     signPositions.forEach((pos, idx) => createSignBoard(pos, idx));
 
-    // --- CHAT & CONTROLS ---
     const chatInput = document.getElementById('chat-input');
     const btnSend = document.getElementById('btn-send');
     const btnMic = document.getElementById('btn-mic');
@@ -825,9 +867,9 @@
       let deltaX = clientX - (rect.left + rect.width / 2);
       let deltaY = clientY - (rect.top + rect.height / 2);
       let dist = Math.hypot(deltaX, deltaY);
-      if (dist > 40) { deltaX = (deltaX / dist) * 40; deltaY = (deltaY / dist) * 40; }
+      if (dist > 35) { deltaX = (deltaX / dist) * 35; deltaY = (deltaY / dist) * 35; }
       joystickKnob.style.transform = `translate(calc(-50% + ${deltaX}px), calc(-50% + ${deltaY}px))`;
-      joyInputX = deltaX / 40; joyInputY = deltaY / 40;
+      joyInputX = deltaX / 35; joyInputY = deltaY / 35;
     }
     function resetJoystick() { joystickActive = false; joyInputX = 0; joyInputY = 0; joystickKnob.style.transform = `translate(-50%, -50%)`; }
 
@@ -853,18 +895,29 @@
       if (['KeyD', 'ArrowRight'].includes(e.code)) keys.d = false;
     });
 
+    // แยกการสัมผัสหน้าจอ: หมุนกล้องเฉพาะสัมผัสฝั่งขวาของหน้าจอ (Right Half)
     let cameraYaw = 0, cameraPitch = 0.4, isDraggingCam = false, prevCamX = 0, prevCamY = 0;
+    
     window.addEventListener('pointerdown', e => {
       if (e.target.closest('#ui-layer')) return;
-      isDraggingCam = true; prevCamX = e.clientX; prevCamY = e.clientY;
+      // ตรวจสอบว่าเป็นการสัมผัสในฝั่งขวาของหน้าจอหรือไม่
+      if (e.clientX >= window.innerWidth / 2) {
+        isDraggingCam = true; 
+        prevCamX = e.clientX; 
+        prevCamY = e.clientY;
+      }
     });
+
     window.addEventListener('pointermove', e => {
       if (!isDraggingCam) return;
       cameraYaw -= (e.clientX - prevCamX) * 0.005;
       cameraPitch = Math.max(0.05, Math.min(1.2, cameraPitch + (e.clientY - prevCamY) * 0.005));
-      prevCamX = e.clientX; prevCamY = e.clientY;
+      prevCamX = e.clientX; 
+      prevCamY = e.clientY;
     });
+
     window.addEventListener('pointerup', () => isDraggingCam = false);
+    window.addEventListener('pointercancel', () => isDraggingCam = false);
 
     document.getElementById('btn-jump').addEventListener('pointerdown', (e) => { e.preventDefault(); jump(); });
     function jump() { if (isGrounded) { velocityY = 0.48; isGrounded = false; } }
@@ -884,7 +937,6 @@
     elevatorPrompt.addEventListener('pointerdown', (e) => { e.preventDefault(); useElevator(); });
     window.addEventListener('keydown', (e) => { if (e.code === 'KeyE') useElevator(); });
 
-    // --- GAME LOOP ---
     let timeAcc = 0;
     function update() {
       timeAcc += 0.03;
