@@ -12,7 +12,6 @@
 
     #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
     
-    /* HUD ซ้ายบน ขนาดจิ๋ว */
     .hud-box { 
       position: absolute; top: 6px; left: 6px; 
       background: rgba(20, 16, 38, 0.85); border: 1px solid #ff75a0; 
@@ -38,7 +37,6 @@
     }
     .btn-music.active { border-color: #4ea8de; box-shadow: 0 0 8px rgba(78, 168, 222, 0.5); }
 
-    /* ประวัติแชทขนาดบางและเล็กมาก */
     #chat-history {
       position: absolute; bottom: 42px; left: 50%;
       transform: translateX(-50%);
@@ -90,20 +88,19 @@
     }
     .btn-mic.active { background: #ff75a0; }
 
-    /* วงล้อจอยสติ๊กขนาดใหญ่ขึ้น จับถนัดมือ */
     #joystick-base {
       position: absolute; bottom: 15px; left: 15px;
-      width: 130px; height: 130px;
+      width: 80px; height: 80px;
       background: rgba(78, 168, 222, 0.15);
-      border: 2px solid rgba(255, 117, 160, 0.5);
+      border: 1.5px solid rgba(255, 117, 160, 0.5);
       border-radius: 50%;
       pointer-events: auto; touch-action: none; cursor: pointer; z-index: 20;
     }
     #joystick-knob {
       position: absolute; top: 50%; left: 50%;
-      width: 52px; height: 52px;
+      width: 30px; height: 30px;
       background: rgba(255, 117, 160, 0.85);
-      border: 2px solid #90e0ef;
+      border: 1.5px solid #90e0ef;
       border-radius: 50%;
       transform: translate(-50%, -50%);
       pointer-events: none;
@@ -315,7 +312,7 @@
       group.rotation.y = rotY;
 
       const canvasFront = document.createElement('canvas');
-      canvasFront.width = 900; canvasFront.height = 240;
+      canvasFront.width = 1800; canvasFront.height = 480;
       drawFuncFront(canvasFront.getContext('2d'));
       const planeFront = new THREE.Mesh(
         new THREE.PlaneGeometry(width, height),
@@ -325,7 +322,7 @@
       group.add(planeFront);
 
       const canvasBack = document.createElement('canvas');
-      canvasBack.width = 900; canvasBack.height = 240;
+      canvasBack.width = 1800; canvasBack.height = 480;
       drawFuncBack(canvasBack.getContext('2d'));
       
       const planeBack = new THREE.Mesh(
@@ -343,27 +340,27 @@
       16, 4.25,
       (ctx) => {
         ctx.fillStyle = 'rgba(10, 12, 35, 0.92)';
-        ctx.roundRect(20, 20, 860, 200, 40);
+        ctx.roundRect(20, 20, 1760, 440, 80);
         ctx.fill();
-        ctx.strokeStyle = '#4cc9f0'; ctx.lineWidth = 8; ctx.stroke();
-        ctx.font = '900 64px "Segoe UI", sans-serif';
+        ctx.strokeStyle = '#4cc9f0'; ctx.lineWidth = 16; ctx.stroke();
+        ctx.font = '900 110px "Segoe UI", sans-serif';
         ctx.fillStyle = '#ffffff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.fillText('✦ STAR VIEWING AREA ✦', 450, 105);
-        ctx.font = 'bold 30px "Segoe UI", sans-serif';
+        ctx.fillText('✦ STAR VIEWING AREA ✦', 900, 210);
+        ctx.font = 'bold 54px "Segoe UI", sans-serif';
         ctx.fillStyle = '#90e0ef';
-        ctx.fillText('ลานดูดาวกลางนิทรรศการ', 450, 170);
+        ctx.fillText('ลานดูดาวกลางนิทรรศการ', 900, 340);
       },
       (ctx) => {
         ctx.fillStyle = 'rgba(10, 12, 35, 0.92)';
-        ctx.roundRect(20, 20, 860, 200, 40);
+        ctx.roundRect(20, 20, 1760, 440, 80);
         ctx.fill();
-        ctx.strokeStyle = '#4cc9f0'; ctx.lineWidth = 8; ctx.stroke();
-        ctx.font = '900 64px "Segoe UI", sans-serif';
+        ctx.strokeStyle = '#4cc9f0'; ctx.lineWidth = 16; ctx.stroke();
+        ctx.font = '900 110px "Segoe UI", sans-serif';
         ctx.fillStyle = '#ffffff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.fillText('✦ STAR VIEWING AREA ✦', 450, 105);
-        ctx.font = 'bold 30px "Segoe UI", sans-serif';
+        ctx.fillText('✦ STAR VIEWING AREA ✦', 900, 210);
+        ctx.font = 'bold 54px "Segoe UI", sans-serif';
         ctx.fillStyle = '#90e0ef';
-        ctx.fillText('ลานดูดาวกลางนิทรรศการ', 450, 170);
+        ctx.fillText('ลานดูดาวกลางนิทรรศการ', 900, 340);
       },
       0, 4.2, -25, 0
     );
@@ -562,15 +559,15 @@
 
     const drawTitleContent = (ctx) => {
       ctx.fillStyle = 'rgba(20, 15, 38, 0.85)';
-      ctx.beginPath(); ctx.roundRect(20, 20, 984, 280, 50); ctx.fill();
-      ctx.lineWidth = 10; ctx.strokeStyle = '#ff75a0'; ctx.stroke();
-      ctx.font = '900 62px "Segoe UI", sans-serif';
+      ctx.beginPath(); ctx.roundRect(20, 20, 2008, 560, 100); ctx.fill();
+      ctx.lineWidth = 20; ctx.strokeStyle = '#ff75a0'; ctx.stroke();
+      ctx.font = '900 125px "Segoe UI", sans-serif';
       ctx.fillStyle = '#f72585'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText('Mini Exhibition of Feelings', 512, 160);
+      ctx.fillText('Mini Exhibition of Feelings', 1024, 300);
     };
 
     const tCanvasFront = document.createElement('canvas');
-    tCanvasFront.width = 1024; tCanvasFront.height = 320;
+    tCanvasFront.width = 2048; tCanvasFront.height = 640;
     drawTitleContent(tCanvasFront.getContext('2d'));
     const titlePlaneFront = new THREE.Mesh(
       new THREE.PlaneGeometry(32, 10), 
@@ -580,7 +577,7 @@
     centerTitleGroup.add(titlePlaneFront);
 
     const tCanvasBack = document.createElement('canvas');
-    tCanvasBack.width = 1024; tCanvasBack.height = 320;
+    tCanvasBack.width = 2048; tCanvasBack.height = 640;
     drawTitleContent(tCanvasBack.getContext('2d'));
     const titlePlaneBack = new THREE.Mesh(
       new THREE.PlaneGeometry(32, 10), 
@@ -651,7 +648,7 @@
     addLeg(false); addLeg(true);
 
     const overheadCanvas = document.createElement('canvas');
-    overheadCanvas.width = 512; overheadCanvas.height = 256;
+    overheadCanvas.width = 1024; overheadCanvas.height = 512;
     const overheadCtx = overheadCanvas.getContext('2d');
     const overheadTexture = new THREE.CanvasTexture(overheadCanvas);
     const overheadSprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: overheadTexture }));
@@ -665,23 +662,23 @@
     let isMicActive = false;
 
     function renderOverheadUI() {
-      overheadCtx.clearRect(0, 0, 512, 256);
+      overheadCtx.clearRect(0, 0, 1024, 512);
       if (currentChatMessage !== "") {
         overheadCtx.fillStyle = 'rgba(255, 255, 255, 0.95)';
-        overheadCtx.beginPath(); overheadCtx.roundRect(30, 10, 452, 90, 16); overheadCtx.fill();
-        overheadCtx.lineWidth = 4; overheadCtx.strokeStyle = '#ff75a0'; overheadCtx.stroke();
-        overheadCtx.font = 'bold 28px "Segoe UI", sans-serif';
+        overheadCtx.beginPath(); overheadCtx.roundRect(60, 20, 904, 180, 32); overheadCtx.fill();
+        overheadCtx.lineWidth = 8; overheadCtx.strokeStyle = '#ff75a0'; overheadCtx.stroke();
+        overheadCtx.font = 'bold 56px "Segoe UI", sans-serif';
         overheadCtx.fillStyle = '#1a1838'; overheadCtx.textAlign = 'center'; overheadCtx.textBaseline = 'middle';
-        overheadCtx.fillText(currentChatMessage, 256, 55);
+        overheadCtx.fillText(currentChatMessage, 512, 110);
       }
 
       if (currentPlayerName.length > 0 && currentPlayerName.length <= 7) {
         overheadCtx.fillStyle = 'rgba(15, 10, 25, 0.85)';
-        overheadCtx.beginPath(); overheadCtx.roundRect(40, 140, 432, 80, 20); overheadCtx.fill();
-        overheadCtx.lineWidth = 4; overheadCtx.strokeStyle = isMicActive ? '#4ea8de' : '#ff75a0'; overheadCtx.stroke();
-        overheadCtx.font = 'bold 38px "Segoe UI", sans-serif';
+        overheadCtx.beginPath(); overheadCtx.roundRect(80, 280, 864, 160, 40); overheadCtx.fill();
+        overheadCtx.lineWidth = 8; overheadCtx.strokeStyle = isMicActive ? '#4ea8de' : '#ff75a0'; overheadCtx.stroke();
+        overheadCtx.font = 'bold 76px "Segoe UI", sans-serif';
         overheadCtx.fillStyle = '#ffffff'; overheadCtx.textAlign = 'center'; overheadCtx.textBaseline = 'middle';
-        overheadCtx.fillText(isMicActive ? `🎙️ ${currentPlayerName}` : currentPlayerName, 256, 180);
+        overheadCtx.fillText(isMicActive ? `🎙️ ${currentPlayerName}` : currentPlayerName, 512, 360);
       }
       overheadTexture.needsUpdate = true;
     }
@@ -732,7 +729,7 @@
       group.add(pole1); group.add(pole2);
 
       const canvas = document.createElement('canvas');
-      canvas.width = 1100; canvas.height = 700;
+      canvas.width = 2200; canvas.height = 1400;
       const ctx = canvas.getContext('2d');
       const texture = new THREE.CanvasTexture(canvas);
 
@@ -750,28 +747,28 @@
 
     function renderSignText(sign) {
       const ctx = sign.ctx;
-      ctx.clearRect(0, 0, 1100, 700);
+      ctx.clearRect(0, 0, 2200, 1400);
       ctx.fillStyle = sign.ownerId ? '#1a103c' : '#0b1329';
-      ctx.fillRect(0, 0, 1100, 700);
-      ctx.lineWidth = 16; ctx.strokeStyle = sign.ownerId ? '#ff75a0' : '#4ea8de'; ctx.strokeRect(8, 8, 1084, 684);
+      ctx.fillRect(0, 0, 2200, 1400);
+      ctx.lineWidth = 32; ctx.strokeStyle = sign.ownerId ? '#ff75a0' : '#4ea8de'; ctx.strokeRect(16, 16, 2168, 1368);
 
-      ctx.font = 'bold 36px "Segoe UI", sans-serif'; ctx.fillStyle = '#ff75a0';
-      ctx.fillText(`SIGN #${String(sign.index + 1).padStart(2, '0')}`, 35, 30);
+      ctx.font = 'bold 72px "Segoe UI", sans-serif'; ctx.fillStyle = '#ff75a0';
+      ctx.fillText(`SIGN #${String(sign.index + 1).padStart(2, '0')}`, 70, 65);
 
       if (sign.ownerId) {
         ctx.fillStyle = 'rgba(15, 10, 30, 0.85)';
-        ctx.beginPath(); ctx.roundRect(340, 25, 420, 65, 30); ctx.fill(); ctx.stroke();
-        ctx.font = 'bold 38px "Segoe UI", sans-serif'; ctx.fillStyle = '#ffffff'; ctx.textAlign = 'center';
-        ctx.fillText(sign.ownerName, 550, 57);
+        ctx.beginPath(); ctx.roundRect(680, 50, 840, 130, 60); ctx.fill(); ctx.stroke();
+        ctx.font = 'bold 76px "Segoe UI", sans-serif'; ctx.fillStyle = '#ffffff'; ctx.textAlign = 'center';
+        ctx.fillText(sign.ownerName, 1100, 115);
 
-        ctx.font = '40px "Segoe UI", sans-serif'; ctx.fillStyle = '#ffffff'; ctx.textAlign = 'left';
-        const lines = getWrappedLines(ctx, sign.message, 980);
-        lines.forEach((lineText, idx) => ctx.fillText(lineText, 60, 175 + (idx * 58)));
+        ctx.font = '80px "Segoe UI", sans-serif'; ctx.fillStyle = '#ffffff'; ctx.textAlign = 'left';
+        const lines = getWrappedLines(ctx, sign.message, 1960);
+        lines.forEach((lineText, idx) => ctx.fillText(lineText, 120, 350 + (idx * 116)));
       } else {
-        ctx.font = 'bold 68px "Segoe UI", sans-serif'; ctx.fillStyle = '#4ea8de'; ctx.textAlign = 'center';
-        ctx.fillText(`[ ป้ายว่าง #${sign.index + 1} ]`, 550, 310);
-        ctx.font = '36px "Segoe UI", sans-serif'; ctx.fillStyle = '#a0c4ff';
-        ctx.fillText('เดินเข้ามาใกล้ๆ เพื่อเช็คอินที่นี่', 550, 410);
+        ctx.font = '900 136px "Segoe UI", sans-serif'; ctx.fillStyle = '#4ea8de'; ctx.textAlign = 'center';
+        ctx.fillText(`[ ป้ายว่าง #${sign.index + 1} ]`, 1100, 620);
+        ctx.font = '72px "Segoe UI", sans-serif'; ctx.fillStyle = '#a0c4ff';
+        ctx.fillText('เดินเข้ามาใกล้ๆ เพื่อเช็คอินที่นี่', 1100, 820);
       }
       sign.texture.needsUpdate = true;
     }
@@ -841,47 +838,22 @@
     const joystickBase = document.getElementById('joystick-base');
     const joystickKnob = document.getElementById('joystick-knob');
     let joyInputX = 0, joyInputY = 0, joystickActive = false;
-    let activeJoystickPointerId = null;
 
     function handleJoystickMove(clientX, clientY) {
       const rect = joystickBase.getBoundingClientRect();
-      const maxRadius = rect.width / 2;
-      let deltaX = clientX - (rect.left + maxRadius);
-      let deltaY = clientY - (rect.top + maxRadius);
+      let deltaX = clientX - (rect.left + rect.width / 2);
+      let deltaY = clientY - (rect.top + rect.height / 2);
       let dist = Math.hypot(deltaX, deltaY);
-      if (dist > maxRadius) { deltaX = (deltaX / dist) * maxRadius; deltaY = (deltaY / dist) * maxRadius; }
+      if (dist > 25) { deltaX = (deltaX / dist) * 25; deltaY = (deltaY / dist) * 25; }
       joystickKnob.style.transform = `translate(calc(-50% + ${deltaX}px), calc(-50% + ${deltaY}px))`;
-      joyInputX = deltaX / maxRadius; joyInputY = deltaY / maxRadius;
+      joyInputX = deltaX / 25; joyInputY = deltaY / 25;
     }
+    function resetJoystick() { joystickActive = false; joyInputX = 0; joyInputY = 0; joystickKnob.style.transform = `translate(-50%, -50%)`; }
 
-    function resetJoystick() {
-      joystickActive = false; activeJoystickPointerId = null;
-      joyInputX = 0; joyInputY = 0; 
-      joystickKnob.style.transform = `translate(-50%, -50%)`;
-    }
-
-    joystickBase.addEventListener('pointerdown', (e) => {
-      e.preventDefault();
-      if (!joystickActive) {
-        joystickActive = true;
-        activeJoystickPointerId = e.pointerId;
-        joystickBase.setPointerCapture(e.pointerId);
-        handleJoystickMove(e.clientX, e.clientY);
-      }
-    });
-    
-    joystickBase.addEventListener('pointermove', (e) => {
-      if (joystickActive && e.pointerId === activeJoystickPointerId) {
-        handleJoystickMove(e.clientX, e.clientY);
-      }
-    });
-    
-    joystickBase.addEventListener('pointerup', (e) => {
-      if (e.pointerId === activeJoystickPointerId) resetJoystick();
-    });
-    joystickBase.addEventListener('pointercancel', (e) => {
-      if (e.pointerId === activeJoystickPointerId) resetJoystick();
-    });
+    joystickBase.addEventListener('pointerdown', (e) => { e.preventDefault(); joystickActive = true; joystickBase.setPointerCapture(e.pointerId); handleJoystickMove(e.clientX, e.clientY); });
+    joystickBase.addEventListener('pointermove', (e) => { if (joystickActive) handleJoystickMove(e.clientX, e.clientY); });
+    joystickBase.addEventListener('pointerup', resetJoystick);
+    joystickBase.addEventListener('pointercancel', resetJoystick);
 
     let velocityY = 0, gravity = 0.018, isGrounded = true;
     const keys = { w: false, a: false, s: false, d: false };
@@ -900,36 +872,27 @@
       if (['KeyD', 'ArrowRight'].includes(e.code)) keys.d = false;
     });
 
-    // ระบบควบคุมมุมกล้องแบบแยกนิ้วเด็ดขาด ป้องกันจอสะบัดเวลาทัชปุ่มอื่นพร้อมกัน
-    let cameraYaw = 0, cameraPitch = 0.4, isDraggingCam = false, activeCamPointerId = null, prevCamX = 0, prevCamY = 0;
+    let cameraYaw = 0, cameraPitch = 0.4, isDraggingCam = false, prevCamX = 0, prevCamY = 0;
     
     window.addEventListener('pointerdown', e => {
-      // ถ้ากดโดนปุ่ม UI, จอยสติ๊ก หรือช่องพิมพ์ ให้ไม่สนใจการหมุนกล้อง
       if (e.target.closest('#ui-layer')) return;
-      // ให้หมุนกล้องได้เฉพาะเมื่อทัชฝั่งขวาของหน้าจอ (ป้องกันทัชซ้อนกับจอยฝั่งซ้าย)
-      if (!isDraggingCam && e.clientX >= window.innerWidth / 2) {
-        isDraggingCam = true;
-        activeCamPointerId = e.pointerId;
+      if (e.clientX >= window.innerWidth / 2) {
+        isDraggingCam = true; 
         prevCamX = e.clientX; 
         prevCamY = e.clientY;
       }
     });
 
     window.addEventListener('pointermove', e => {
-      if (isDraggingCam && e.pointerId === activeCamPointerId) {
-        cameraYaw -= (e.clientX - prevCamX) * 0.005;
-        cameraPitch = Math.max(0.05, Math.min(1.2, cameraPitch + (e.clientY - prevCamY) * 0.005));
-        prevCamX = e.clientX; 
-        prevCamY = e.clientY;
-      }
+      if (!isDraggingCam) return;
+      cameraYaw -= (e.clientX - prevCamX) * 0.005;
+      cameraPitch = Math.max(0.05, Math.min(1.2, cameraPitch + (e.clientY - prevCamY) * 0.005));
+      prevCamX = e.clientX; 
+      prevCamY = e.clientY;
     });
 
-    window.addEventListener('pointerup', e => {
-      if (e.pointerId === activeCamPointerId) { isDraggingCam = false; activeCamPointerId = null; }
-    });
-    window.addEventListener('pointercancel', e => {
-      if (e.pointerId === activeCamPointerId) { isDraggingCam = false; activeCamPointerId = null; }
-    });
+    window.addEventListener('pointerup', () => isDraggingCam = false);
+    window.addEventListener('pointercancel', () => isDraggingCam = false);
 
     document.getElementById('btn-jump').addEventListener('pointerdown', (e) => { e.preventDefault(); jump(); });
     function jump() { if (isGrounded) { velocityY = 0.48; isGrounded = false; } }
