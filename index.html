@@ -90,20 +90,20 @@
     }
     .btn-mic.active { background: #ff75a0; }
 
-    /* Joystick ขนาดเล็ก */
+    /* วงล้อจอยสติ๊กขนาดใหญ่ขึ้น จับถนัดมือ */
     #joystick-base {
       position: absolute; bottom: 15px; left: 15px;
-      width: 80px; height: 80px;
+      width: 130px; height: 130px;
       background: rgba(78, 168, 222, 0.15);
-      border: 1.5px solid rgba(255, 117, 160, 0.5);
+      border: 2px solid rgba(255, 117, 160, 0.5);
       border-radius: 50%;
       pointer-events: auto; touch-action: none; cursor: pointer; z-index: 20;
     }
     #joystick-knob {
       position: absolute; top: 50%; left: 50%;
-      width: 30px; height: 30px;
+      width: 52px; height: 52px;
       background: rgba(255, 117, 160, 0.85);
-      border: 1.5px solid #90e0ef;
+      border: 2px solid #90e0ef;
       border-radius: 50%;
       transform: translate(-50%, -50%);
       pointer-events: none;
@@ -841,22 +841,47 @@
     const joystickBase = document.getElementById('joystick-base');
     const joystickKnob = document.getElementById('joystick-knob');
     let joyInputX = 0, joyInputY = 0, joystickActive = false;
+    let activeJoystickPointerId = null;
 
     function handleJoystickMove(clientX, clientY) {
       const rect = joystickBase.getBoundingClientRect();
-      let deltaX = clientX - (rect.left + rect.width / 2);
-      let deltaY = clientY - (rect.top + rect.height / 2);
+      const maxRadius = rect.width / 2;
+      let deltaX = clientX - (rect.left + maxRadius);
+      let deltaY = clientY - (rect.top + maxRadius);
       let dist = Math.hypot(deltaX, deltaY);
-      if (dist > 25) { deltaX = (deltaX / dist) * 25; deltaY = (deltaY / dist) * 25; }
+      if (dist > maxRadius) { deltaX = (deltaX / dist) * maxRadius; deltaY = (deltaY / dist) * maxRadius; }
       joystickKnob.style.transform = `translate(calc(-50% + ${deltaX}px), calc(-50% + ${deltaY}px))`;
-      joyInputX = deltaX / 25; joyInputY = deltaY / 25;
+      joyInputX = deltaX / maxRadius; joyInputY = deltaY / maxRadius;
     }
-    function resetJoystick() { joystickActive = false; joyInputX = 0; joyInputY = 0; joystickKnob.style.transform = `translate(-50%, -50%)`; }
 
-    joystickBase.addEventListener('pointerdown', (e) => { e.preventDefault(); joystickActive = true; joystickBase.setPointerCapture(e.pointerId); handleJoystickMove(e.clientX, e.clientY); });
-    joystickBase.addEventListener('pointermove', (e) => { if (joystickActive) handleJoystickMove(e.clientX, e.clientY); });
-    joystickBase.addEventListener('pointerup', resetJoystick);
-    joystickBase.addEventListener('pointercancel', resetJoystick);
+    function resetJoystick() {
+      joystickActive = false; activeJoystickPointerId = null;
+      joyInputX = 0; joyInputY = 0; 
+      joystickKnob.style.transform = `translate(-50%, -50%)`;
+    }
+
+    joystickBase.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      if (!joystickActive) {
+        joystickActive = true;
+        activeJoystickPointerId = e.pointerId;
+        joystickBase.setPointerCapture(e.pointerId);
+        handleJoystickMove(e.clientX, e.clientY);
+      }
+    });
+    
+    joystickBase.addEventListener('pointermove', (e) => {
+      if (joystickActive && e.pointerId === activeJoystickPointerId) {
+        handleJoystickMove(e.clientX, e.clientY);
+      }
+    });
+    
+    joystickBase.addEventListener('pointerup', (e) => {
+      if (e.pointerId === activeJoystickPointerId) resetJoystick();
+    });
+    joystickBase.addEventListener('pointercancel', (e) => {
+      if (e.pointerId === activeJoystickPointerId) resetJoystick();
+    });
 
     let velocityY = 0, gravity = 0.018, isGrounded = true;
     const keys = { w: false, a: false, s: false, d: false };
@@ -875,28 +900,36 @@
       if (['KeyD', 'ArrowRight'].includes(e.code)) keys.d = false;
     });
 
-    // แยกการสัมผัสหน้าจอ: หมุนกล้องเฉพาะสัมผัสฝั่งขวาของหน้าจอ (Right Half)
-    let cameraYaw = 0, cameraPitch = 0.4, isDraggingCam = false, prevCamX = 0, prevCamY = 0;
+    // ระบบควบคุมมุมกล้องแบบแยกนิ้วเด็ดขาด ป้องกันจอสะบัดเวลาทัชปุ่มอื่นพร้อมกัน
+    let cameraYaw = 0, cameraPitch = 0.4, isDraggingCam = false, activeCamPointerId = null, prevCamX = 0, prevCamY = 0;
     
     window.addEventListener('pointerdown', e => {
+      // ถ้ากดโดนปุ่ม UI, จอยสติ๊ก หรือช่องพิมพ์ ให้ไม่สนใจการหมุนกล้อง
       if (e.target.closest('#ui-layer')) return;
-      if (e.clientX >= window.innerWidth / 2) {
-        isDraggingCam = true; 
+      // ให้หมุนกล้องได้เฉพาะเมื่อทัชฝั่งขวาของหน้าจอ (ป้องกันทัชซ้อนกับจอยฝั่งซ้าย)
+      if (!isDraggingCam && e.clientX >= window.innerWidth / 2) {
+        isDraggingCam = true;
+        activeCamPointerId = e.pointerId;
         prevCamX = e.clientX; 
         prevCamY = e.clientY;
       }
     });
 
     window.addEventListener('pointermove', e => {
-      if (!isDraggingCam) return;
-      cameraYaw -= (e.clientX - prevCamX) * 0.005;
-      cameraPitch = Math.max(0.05, Math.min(1.2, cameraPitch + (e.clientY - prevCamY) * 0.005));
-      prevCamX = e.clientX; 
-      prevCamY = e.clientY;
+      if (isDraggingCam && e.pointerId === activeCamPointerId) {
+        cameraYaw -= (e.clientX - prevCamX) * 0.005;
+        cameraPitch = Math.max(0.05, Math.min(1.2, cameraPitch + (e.clientY - prevCamY) * 0.005));
+        prevCamX = e.clientX; 
+        prevCamY = e.clientY;
+      }
     });
 
-    window.addEventListener('pointerup', () => isDraggingCam = false);
-    window.addEventListener('pointercancel', () => isDraggingCam = false);
+    window.addEventListener('pointerup', e => {
+      if (e.pointerId === activeCamPointerId) { isDraggingCam = false; activeCamPointerId = null; }
+    });
+    window.addEventListener('pointercancel', e => {
+      if (e.pointerId === activeCamPointerId) { isDraggingCam = false; activeCamPointerId = null; }
+    });
 
     document.getElementById('btn-jump').addEventListener('pointerdown', (e) => { e.preventDefault(); jump(); });
     function jump() { if (isGrounded) { velocityY = 0.48; isGrounded = false; } }
