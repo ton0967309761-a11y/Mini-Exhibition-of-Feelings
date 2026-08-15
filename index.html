@@ -117,6 +117,25 @@
       box-shadow: 0 0 12px rgba(255, 117, 160, 0.6);
     }
 
+
+    .elevator-prompt {
+      position: absolute; bottom: 165px; left: 50%;
+      transform: translateX(-50%);
+      background: rgba(20, 16, 38, 0.95);
+      border: 2px solid #4cc9f0;
+      color: #fff; padding: 12px 22px; border-radius: 30px;
+      font-weight: bold; font-size: 15px;
+      display: none; pointer-events: auto; cursor: pointer; z-index: 20;
+      box-shadow: 0 0 20px rgba(76, 201, 240, 0.55);
+      animation: pulse 1.5s infinite;
+      white-space: nowrap;
+    }
+
+    .elevator-prompt.sky {
+      border-color: #f72585;
+      box-shadow: 0 0 20px rgba(247, 37, 133, 0.55);
+    }
+
     .btn-jump { 
       position: absolute; bottom: 85px; right: 35px; width: 70px; height: 70px; 
       border-radius: 50%; background: rgba(78, 168, 222, 0.4); 
@@ -178,6 +197,7 @@
     </div>
 
     <div id="checkin-prompt">📝 กดเช็คอิน / แก้ไขป้าย</div>
+    <div id="elevator-prompt">🛗 กดเพื่อขึ้นลิฟต์</div>
     <div id="joystick-base"><div id="joystick-knob"></div></div>
     <div class="btn-jump" id="btn-jump">🦘</div>
     <div id="warp-notice">🔮 กำลังข้ามประตูมิติ...</div>
@@ -300,6 +320,471 @@
     addWall(ROOM_SIZE, WALL_H, 3, 0, WALL_H/2, ROOM_SIZE/2);
     addWall(3, WALL_H, ROOM_SIZE, -ROOM_SIZE/2, WALL_H/2, 0);
     addWall(3, WALL_H, ROOM_SIZE, ROOM_SIZE/2, WALL_H/2, 0);
+
+
+    // --- 3. CENTRAL STAR VIEWING AREA (ลานดูดาวกลางแมพ) ---
+    const STAR_AREA_X = 0;
+    const STAR_AREA_Z = 0;
+    const STAR_AREA_RADIUS = 32;
+
+    const starAreaGroup = new THREE.Group();
+    starAreaGroup.position.set(STAR_AREA_X, 0, STAR_AREA_Z);
+    scene.add(starAreaGroup);
+
+    // พื้นวงกลมสำหรับดูดาว
+    const starDeck = new THREE.Mesh(
+      new THREE.CylinderGeometry(STAR_AREA_RADIUS, STAR_AREA_RADIUS, 0.35, 96),
+      new THREE.MeshStandardMaterial({
+        color: 0x11162f,
+        roughness: 0.28,
+        metalness: 0.35
+      })
+    );
+    starDeck.position.y = 0.18;
+    starDeck.receiveShadow = true;
+    starAreaGroup.add(starDeck);
+
+    // วงแหวนเรืองแสงรอบลาน
+    const starRing = new THREE.Mesh(
+      new THREE.TorusGeometry(STAR_AREA_RADIUS - 2, 0.45, 16, 96),
+      new THREE.MeshBasicMaterial({ color: 0x4cc9f0 })
+    );
+    starRing.rotation.x = Math.PI / 2;
+    starRing.position.y = 0.45;
+    starAreaGroup.add(starRing);
+
+    const starRing2 = new THREE.Mesh(
+      new THREE.TorusGeometry(STAR_AREA_RADIUS - 7, 0.12, 12, 96),
+      new THREE.MeshBasicMaterial({ color: 0xf72585 })
+    );
+    starRing2.rotation.x = Math.PI / 2;
+    starRing2.position.y = 0.48;
+    starAreaGroup.add(starRing2);
+
+    // จุดวงกลมเล็ก ๆ เป็นไฟนำทาง
+    for (let i = 0; i < 24; i++) {
+      const a = (i / 24) * Math.PI * 2;
+      const light = new THREE.PointLight(i % 2 === 0 ? 0x4cc9f0 : 0xf72585, 0.55, 7);
+      light.position.set(Math.cos(a) * (STAR_AREA_RADIUS - 3), 1.2, Math.sin(a) * (STAR_AREA_RADIUS - 3));
+      starAreaGroup.add(light);
+    }
+
+    // ป้ายกลางลาน
+    const starSignCanvas = document.createElement('canvas');
+    starSignCanvas.width = 900;
+    starSignCanvas.height = 240;
+    const starSignCtx = starSignCanvas.getContext('2d');
+    starSignCtx.fillStyle = 'rgba(10, 12, 35, 0.92)';
+    starSignCtx.beginPath();
+    starSignCtx.roundRect(20, 20, 860, 200, 40);
+    starSignCtx.fill();
+    starSignCtx.strokeStyle = '#4cc9f0';
+    starSignCtx.lineWidth = 8;
+    starSignCtx.stroke();
+    starSignCtx.font = '900 64px "Segoe UI", sans-serif';
+    starSignCtx.fillStyle = '#ffffff';
+    starSignCtx.textAlign = 'center';
+    starSignCtx.textBaseline = 'middle';
+    starSignCtx.fillText('✦ STAR VIEWING AREA ✦', 450, 105);
+    starSignCtx.font = 'bold 30px "Segoe UI", sans-serif';
+    starSignCtx.fillStyle = '#90e0ef';
+    starSignCtx.fillText('ลานดูดาวกลางนิทรรศการ', 450, 170);
+
+    const starSignTexture = new THREE.CanvasTexture(starSignCanvas);
+    const starSign = new THREE.Mesh(
+      new THREE.PlaneGeometry(16, 4.25),
+      new THREE.MeshBasicMaterial({ map: starSignTexture, transparent: true })
+    );
+    starSign.position.set(0, 4.2, -25);
+    starSign.rotation.y = Math.PI;
+    starAreaGroup.add(starSign);
+
+    // เก้าอี้/แท่นนั่งรอบลาน
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * Math.PI * 2;
+      const seat = new THREE.Mesh(
+        new THREE.BoxGeometry(5.5, 0.55, 2.0),
+        new THREE.MeshStandardMaterial({ color: 0x252a4a, roughness: 0.5, metalness: 0.2 })
+      );
+      seat.position.set(Math.cos(a) * 21, 0.8, Math.sin(a) * 21);
+      seat.rotation.y = -a;
+      seat.castShadow = true;
+      starAreaGroup.add(seat);
+    }
+
+    // กล้องโทรทรรศน์ 3 ตัว
+    function addTelescope(x, z, rotationY) {
+      const group = new THREE.Group();
+      group.position.set(x, 0.6, z);
+      group.rotation.y = rotationY;
+
+      const tripod = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.12, 0.22, 3.2, 12),
+        new THREE.MeshStandardMaterial({ color: 0x8d99ae, metalness: 0.7, roughness: 0.3 })
+      );
+      tripod.position.y = 1.6;
+      group.add(tripod);
+
+      const body = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.7, 0.7, 3.8, 24),
+        new THREE.MeshStandardMaterial({ color: 0x4cc9f0, metalness: 0.55, roughness: 0.25 })
+      );
+      body.rotation.z = Math.PI / 2;
+      body.position.set(0, 3.2, 0);
+      group.add(body);
+
+      const lens = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.48, 0.48, 0.18, 24),
+        new THREE.MeshBasicMaterial({ color: 0xf72585 })
+      );
+      lens.rotation.z = Math.PI / 2;
+      lens.position.set(1.98, 3.2, 0);
+      group.add(lens);
+
+      const glow = new THREE.PointLight(0x4cc9f0, 0.5, 8);
+      glow.position.set(0, 3.2, 0);
+      group.add(glow);
+
+      starAreaGroup.add(group);
+    }
+
+    addTelescope(-14, -8, 0.2);
+    addTelescope(14, -8, -0.2);
+    addTelescope(0, 15, Math.PI);
+
+    // ดาวจำนวนมากบนท้องฟ้า
+    const starPositions = [];
+    const starColors = [];
+    const STAR_COUNT = 900;
+
+    for (let i = 0; i < STAR_COUNT; i++) {
+      const theta = Math.random() * Math.PI * 2;
+      const phi = Math.random() * Math.PI * 0.48 + 0.08;
+      const radius = 120 + Math.random() * 110;
+
+      const x = Math.sin(phi) * Math.cos(theta) * radius;
+      const y = Math.cos(phi) * radius + 25;
+      const z = Math.sin(phi) * Math.sin(theta) * radius;
+
+      starPositions.push(x, y, z);
+      starColors.push(
+        0.65 + Math.random() * 0.35,
+        0.72 + Math.random() * 0.28,
+        1.0
+      );
+    }
+
+    const starGeometry = new THREE.BufferGeometry();
+    starGeometry.setAttribute(
+      'position',
+      new THREE.Float32BufferAttribute(starPositions, 3)
+    );
+    starGeometry.setAttribute(
+      'color',
+      new THREE.Float32BufferAttribute(starColors, 3)
+    );
+
+    const starMaterial = new THREE.PointsMaterial({
+      size: 0.85,
+      transparent: true,
+      opacity: 0.9,
+      vertexColors: true,
+      sizeAttenuation: true
+    });
+
+    const starField = new THREE.Points(starGeometry, starMaterial);
+    scene.add(starField);
+
+    // ดาวตกเล็ก ๆ 3 ดวง
+    const shootingStars = [];
+    for (let i = 0; i < 3; i++) {
+      const meteorGroup = new THREE.Group();
+      const head = new THREE.Mesh(
+        new THREE.SphereGeometry(0.18, 8, 8),
+        new THREE.MeshBasicMaterial({ color: 0xffffff })
+      );
+      const tail = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.02, 0.12, 5, 8),
+        new THREE.MeshBasicMaterial({ color: 0x4cc9f0, transparent: true, opacity: 0.55 })
+      );
+      tail.rotation.z = Math.PI / 3;
+      tail.position.y = 2;
+      meteorGroup.add(head);
+      meteorGroup.add(tail);
+      meteorGroup.position.set(
+        -55 + i * 45,
+        55 + i * 8,
+        -45 - i * 12
+      );
+      scene.add(meteorGroup);
+      shootingStars.push(meteorGroup);
+    }
+
+    // --- 3.5 ELEVATOR SYSTEM (ลิฟต์ขึ้นลานดูดาวชั้นบน) ---
+    const ELEVATOR_X = 18;
+    const ELEVATOR_Z = 0;
+    const ELEVATOR_GROUND_Y = 0.05;
+    const ELEVATOR_TOP_Y = 65;
+    const ELEVATOR_SPEED = 0.32;
+    const SKY_DECK_RADIUS = 32;
+
+    const elevatorGroup = new THREE.Group();
+    elevatorGroup.position.set(ELEVATOR_X, ELEVATOR_GROUND_Y, ELEVATOR_Z);
+    scene.add(elevatorGroup);
+
+    const elevatorPlatform = new THREE.Mesh(
+      new THREE.CylinderGeometry(4.5, 4.5, 0.5, 48),
+      new THREE.MeshStandardMaterial({
+        color: 0x202640,
+        roughness: 0.25,
+        metalness: 0.65
+      })
+    );
+    elevatorPlatform.position.y = -0.25;
+    elevatorPlatform.receiveShadow = true;
+    elevatorPlatform.castShadow = true;
+    elevatorGroup.add(elevatorPlatform);
+
+    const elevatorGlowRing = new THREE.Mesh(
+      new THREE.TorusGeometry(4.2, 0.18, 12, 48),
+      new THREE.MeshBasicMaterial({ color: 0x4cc9f0 })
+    );
+    elevatorGlowRing.rotation.x = Math.PI / 2;
+    elevatorGlowRing.position.y = 0.1;
+    elevatorGroup.add(elevatorGlowRing);
+
+    // เสาและหลังคาลิฟต์
+    for (const x of [-3.5, 3.5]) {
+      for (const z of [-3.5, 3.5]) {
+        const post = new THREE.Mesh(
+          new THREE.BoxGeometry(0.35, 9, 0.35),
+          new THREE.MeshStandardMaterial({ color: 0x4a4e69, metalness: 0.7, roughness: 0.25 })
+        );
+        post.position.set(x, 4.5, z);
+        post.castShadow = true;
+        elevatorGroup.add(post);
+      }
+    }
+
+    const elevatorRoof = new THREE.Mesh(
+      new THREE.BoxGeometry(8, 0.35, 8),
+      new THREE.MeshStandardMaterial({ color: 0x171a30, metalness: 0.5, roughness: 0.3 })
+    );
+    elevatorRoof.position.y = 9;
+    elevatorGroup.add(elevatorRoof);
+
+    // ป้ายทางเข้าลิฟต์ขนาดใหญ่บนพื้น
+    const groundLiftSignCanvas = document.createElement('canvas');
+    groundLiftSignCanvas.width = 900;
+    groundLiftSignCanvas.height = 180;
+    const groundLiftSignCtx = groundLiftSignCanvas.getContext('2d');
+    groundLiftSignCtx.fillStyle = 'rgba(8, 10, 30, 0.9)';
+    groundLiftSignCtx.roundRect(20, 20, 860, 140, 35);
+    groundLiftSignCtx.fill();
+    groundLiftSignCtx.strokeStyle = '#4cc9f0';
+    groundLiftSignCtx.lineWidth = 8;
+    groundLiftSignCtx.stroke();
+    groundLiftSignCtx.font = '900 52px "Segoe UI", sans-serif';
+    groundLiftSignCtx.fillStyle = '#ffffff';
+    groundLiftSignCtx.textAlign = 'center';
+    groundLiftSignCtx.textBaseline = 'middle';
+    groundLiftSignCtx.fillText('🛗 STAR LIFT  →  SKY OBSERVATORY', 450, 90);
+
+    const groundLiftSign = new THREE.Mesh(
+      new THREE.PlaneGeometry(12, 2.4),
+      new THREE.MeshBasicMaterial({
+        map: new THREE.CanvasTexture(groundLiftSignCanvas),
+        transparent: true
+      })
+    );
+    groundLiftSign.position.set(0, 0.65, 5.3);
+    groundLiftSign.rotation.x = -Math.PI / 2;
+    elevatorGroup.add(groundLiftSign);
+
+    // เสานำทางลิฟต์สูงตลอดเส้นทาง เพื่อให้เห็นว่าลิฟต์ไปชั้นบน
+    const shaftHeight = ELEVATOR_TOP_Y;
+    const shaftMaterial = new THREE.MeshStandardMaterial({
+      color: 0x24294a,
+      metalness: 0.7,
+      roughness: 0.22
+    });
+
+    for (const sx of [-5.2, 5.2]) {
+      const shaft = new THREE.Mesh(
+        new THREE.BoxGeometry(0.45, shaftHeight, 0.45),
+        shaftMaterial
+      );
+      shaft.position.set(ELEVATOR_X + sx, shaftHeight / 2, ELEVATOR_Z);
+      shaft.castShadow = true;
+      scene.add(shaft);
+
+      const shaftLight = new THREE.Mesh(
+        new THREE.BoxGeometry(0.08, shaftHeight, 0.08),
+        new THREE.MeshBasicMaterial({ color: 0x4cc9f0 })
+      );
+      shaftLight.position.set(ELEVATOR_X + sx, shaftHeight / 2, ELEVATOR_Z + 0.28);
+      scene.add(shaftLight);
+    }
+
+    // ไฟระดับชั้นตามเสาลิฟต์
+    for (let level = 10; level < ELEVATOR_TOP_Y; level += 10) {
+      const levelLight = new THREE.PointLight(0x4cc9f0, 0.35, 9);
+      levelLight.position.set(ELEVATOR_X, level, ELEVATOR_Z);
+      scene.add(levelLight);
+    }
+
+    // ป้ายสูงบนยอดลิฟต์
+    const towerSignCanvas = document.createElement('canvas');
+    towerSignCanvas.width = 700;
+    towerSignCanvas.height = 180;
+    const towerSignCtx = towerSignCanvas.getContext('2d');
+    towerSignCtx.fillStyle = 'rgba(8, 10, 30, 0.88)';
+    towerSignCtx.roundRect(15, 15, 670, 150, 30);
+    towerSignCtx.fill();
+    towerSignCtx.strokeStyle = '#f72585';
+    towerSignCtx.lineWidth = 7;
+    towerSignCtx.stroke();
+    towerSignCtx.font = '900 48px "Segoe UI", sans-serif';
+    towerSignCtx.fillStyle = '#ffffff';
+    towerSignCtx.textAlign = 'center';
+    towerSignCtx.textBaseline = 'middle';
+    towerSignCtx.fillText('✦ SKY OBSERVATORY ✦', 350, 90);
+
+    const towerSign = new THREE.Sprite(
+      new THREE.SpriteMaterial({
+        map: new THREE.CanvasTexture(towerSignCanvas),
+        transparent: true
+      })
+    );
+    towerSign.position.set(ELEVATOR_X, ELEVATOR_TOP_Y + 8, ELEVATOR_Z);
+    towerSign.scale.set(11, 2.8, 1);
+    scene.add(towerSign);
+
+    // ผนังกระจกโปร่งใส
+    const glassMat = new THREE.MeshPhysicalMaterial({
+      color: 0x4cc9f0,
+      transparent: true,
+      opacity: 0.12,
+      roughness: 0.05,
+      metalness: 0.1
+    });
+    for (const z of [-3.9, 3.9]) {
+      const glass = new THREE.Mesh(
+        new THREE.BoxGeometry(7.2, 7.5, 0.08),
+        glassMat
+      );
+      glass.position.set(0, 4.5, z);
+      elevatorGroup.add(glass);
+    }
+
+    const elevatorLight = new THREE.PointLight(0x4cc9f0, 1.5, 18);
+    elevatorLight.position.y = 5;
+    elevatorGroup.add(elevatorLight);
+
+    // ป้ายลิฟต์
+    const elevatorLabelCanvas = document.createElement('canvas');
+    elevatorLabelCanvas.width = 700;
+    elevatorLabelCanvas.height = 180;
+    const elevatorLabelCtx = elevatorLabelCanvas.getContext('2d');
+    elevatorLabelCtx.fillStyle = 'rgba(10, 12, 35, 0.92)';
+    elevatorLabelCtx.roundRect(15, 15, 670, 150, 30);
+    elevatorLabelCtx.fill();
+    elevatorLabelCtx.strokeStyle = '#4cc9f0';
+    elevatorLabelCtx.lineWidth = 7;
+    elevatorLabelCtx.stroke();
+    elevatorLabelCtx.font = '900 48px "Segoe UI", sans-serif';
+    elevatorLabelCtx.fillStyle = '#ffffff';
+    elevatorLabelCtx.textAlign = 'center';
+    elevatorLabelCtx.textBaseline = 'middle';
+    elevatorLabelCtx.fillText('🛗 STAR LIFT', 350, 90);
+
+    const elevatorLabelTexture = new THREE.CanvasTexture(elevatorLabelCanvas);
+    const elevatorLabel = new THREE.Sprite(
+      new THREE.SpriteMaterial({ map: elevatorLabelTexture, transparent: true })
+    );
+    elevatorLabel.position.set(0, 11, -4.2);
+    elevatorLabel.scale.set(8, 2.05, 1);
+    elevatorGroup.add(elevatorLabel);
+
+    // ลานดูดาวชั้นบน
+    const skyDeckGroup = new THREE.Group();
+    skyDeckGroup.position.set(0, ELEVATOR_TOP_Y, 0);
+    scene.add(skyDeckGroup);
+
+    const skyDeck = new THREE.Mesh(
+      new THREE.CylinderGeometry(29, 29, 0.45, 96),
+      new THREE.MeshStandardMaterial({
+        color: 0x0b1028,
+        roughness: 0.22,
+        metalness: 0.45
+      })
+    );
+    skyDeck.position.y = -0.25;
+    skyDeck.receiveShadow = true;
+    skyDeckGroup.add(skyDeck);
+
+    const skyDeckRing = new THREE.Mesh(
+      new THREE.TorusGeometry(27, 0.35, 16, 96),
+      new THREE.MeshBasicMaterial({ color: 0xf72585 })
+    );
+    skyDeckRing.rotation.x = Math.PI / 2;
+    skyDeckGroup.add(skyDeckRing);
+
+    const skyLight = new THREE.PointLight(0x4cc9f0, 2.8, 90);
+    skyLight.position.y = 10;
+    skyDeckGroup.add(skyLight);
+
+    // โดมโปร่งใสด้านบน
+    const dome = new THREE.Mesh(
+      new THREE.SphereGeometry(28, 48, 24, 0, Math.PI * 2, 0, Math.PI / 2),
+      new THREE.MeshBasicMaterial({
+        color: 0x4cc9f0,
+        transparent: true,
+        opacity: 0.055,
+        wireframe: true
+      })
+    );
+    dome.position.y = 0;
+    skyDeckGroup.add(dome);
+
+    // ข้อความลอยเหนือชั้นดูดาว
+    const skyLabelCanvas = document.createElement('canvas');
+    skyLabelCanvas.width = 1000;
+    skyLabelCanvas.height = 220;
+    const skyLabelCtx = skyLabelCanvas.getContext('2d');
+    skyLabelCtx.fillStyle = 'rgba(8, 10, 30, 0.82)';
+    skyLabelCtx.roundRect(20, 20, 960, 180, 40);
+    skyLabelCtx.fill();
+    skyLabelCtx.strokeStyle = '#f72585';
+    skyLabelCtx.lineWidth = 8;
+    skyLabelCtx.stroke();
+    skyLabelCtx.font = '900 58px "Segoe UI", sans-serif';
+    skyLabelCtx.fillStyle = '#ffffff';
+    skyLabelCtx.textAlign = 'center';
+    skyLabelCtx.textBaseline = 'middle';
+    skyLabelCtx.fillText('✦ SKY OBSERVATORY ✦', 500, 110);
+
+    const skyLabel = new THREE.Mesh(
+      new THREE.PlaneGeometry(18, 4),
+      new THREE.MeshBasicMaterial({
+        map: new THREE.CanvasTexture(skyLabelCanvas),
+        transparent: true
+      })
+    );
+    skyLabel.position.set(0, 7, -22);
+    skyLabel.rotation.y = Math.PI;
+    skyDeckGroup.add(skyLabel);
+
+    const skyBeacon = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.35, 0.9, 12, 20),
+      new THREE.MeshBasicMaterial({ color: 0xf72585, transparent: true, opacity: 0.65 })
+    );
+    skyBeacon.position.set(0, 10, 0);
+    skyDeckGroup.add(skyBeacon);
+
+    const beaconLight = new THREE.PointLight(0xf72585, 2.2, 35);
+    beaconLight.position.set(0, 10, 0);
+    skyDeckGroup.add(beaconLight);
 
     // --- 3. SMALL ROOM (ห้องลับขนาดเล็ก 70x70 ที่ X = 600) ---
     const SMALL_ROOM_OFFSET_X = 600;
@@ -868,6 +1353,52 @@
       if (isGrounded) { velocityY = JUMP_FORCE; isGrounded = false; }
     }
 
+
+    // --- STAR LIFT CONTROL ---
+    const elevatorPrompt = document.getElementById('elevator-prompt');
+    let elevatorState = 'ground'; // ground, goingUp, sky, goingDown
+    let elevatorY = ELEVATOR_GROUND_Y;
+    let playerOnElevator = false;
+    let lastElevatorPromptState = '';
+
+    function isPlayerNearElevator() {
+      const dx = slothGroup.position.x - ELEVATOR_X;
+      const dz = slothGroup.position.z - ELEVATOR_Z;
+      const horizontalDistance = Math.hypot(dx, dz);
+      const verticalDistance = Math.abs(slothGroup.position.y - elevatorY);
+      return horizontalDistance < 5.8 && verticalDistance < 5;
+    }
+
+    function setElevatorPrompt(text, isSky = false) {
+      if (lastElevatorPromptState === text) return;
+      lastElevatorPromptState = text;
+      elevatorPrompt.innerText = text;
+      elevatorPrompt.classList.toggle('sky', isSky);
+    }
+
+    function useElevator() {
+      if (!isPlayerNearElevator()) return;
+      if (elevatorState === 'ground') {
+        elevatorState = 'goingUp';
+        playerOnElevator = true;
+        setElevatorPrompt('🛗 กำลังขึ้นลิฟต์...', false);
+      } else if (elevatorState === 'sky') {
+        elevatorState = 'goingDown';
+        playerOnElevator = true;
+        setElevatorPrompt('🛗 กำลังลงลิฟต์...', true);
+      }
+    }
+
+    elevatorPrompt.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      useElevator();
+    });
+
+    window.addEventListener('keydown', (e) => {
+      if (document.activeElement === nameInput || document.activeElement === chatInput) return;
+      if (e.code === 'KeyE') useElevator();
+    });
+
     // --- 11. GAME LOOP ---
     let timeAcc = 0;
     function update() {
@@ -881,6 +1412,22 @@
         p.ringMesh.rotation.x = Math.PI / 2 + Math.sin(timeAcc * 2) * 0.1;
       });
 
+      starRing.rotation.z += 0.002;
+      starRing2.rotation.z -= 0.003;
+      starField.rotation.y += 0.00008;
+
+      shootingStars.forEach((meteor, index) => {
+        meteor.position.x += 0.18 + index * 0.04;
+        meteor.position.y -= 0.06;
+        meteor.position.z += 0.10;
+
+        if (meteor.position.x > 80 || meteor.position.y < 25) {
+          meteor.position.x = -80 - index * 25;
+          meteor.position.y = 60 + index * 8;
+          meteor.position.z = -50 - index * 10;
+        }
+      });
+
       let inputForward = 0, inputRight = 0;
       if (keys.w) inputForward += 1;
       if (keys.s) inputForward -= 1;
@@ -892,7 +1439,10 @@
 
       const inputLen = Math.hypot(inputForward, inputRight);
 
-      if (inputLen > 0.05) {
+      // ระหว่างขึ้น/ลงลิฟต์ ให้ผู้เล่นอยู่บนแท่นลิฟต์
+      const elevatorMoving = elevatorState === 'goingUp' || elevatorState === 'goingDown';
+
+      if (!elevatorMoving && !playerOnElevator && inputLen > 0.05) {
         const normF = inputForward / Math.max(1, inputLen);
         const normR = inputRight / Math.max(1, inputLen);
         const speed = 0.38 * Math.min(1, inputLen);
@@ -905,16 +1455,78 @@
         slothGroup.rotation.y = Math.atan2(moveX, moveZ);
       }
 
-      slothGroup.position.y += velocityY;
-      if (!isGrounded) velocityY -= gravity;
-
-      if (slothGroup.position.y <= 0) {
-        slothGroup.position.y = 0;
-        velocityY = 0;
-        isGrounded = true;
+      if (elevatorState === 'goingUp') {
+        elevatorY = Math.min(ELEVATOR_TOP_Y, elevatorY + ELEVATOR_SPEED);
+        if (elevatorY >= ELEVATOR_TOP_Y) {
+          elevatorY = ELEVATOR_TOP_Y;
+          elevatorState = 'sky';
+          playerOnElevator = true;
+          zoneStatusText.innerText = 'ลานดูดาวสูง 65 เมตร';
+          elevatorPrompt.style.display = 'flex';
+          zoneStatusText.style.color = '#f72585';
+          warpNotice.innerText = '🌌 ถึงลานดูดาวชั้นบนแล้ว';
+          warpNotice.style.opacity = '1';
+          setTimeout(() => warpNotice.style.opacity = '0', 1200);
+        }
+      } else if (elevatorState === 'goingDown') {
+        elevatorY = Math.max(ELEVATOR_GROUND_Y, elevatorY - ELEVATOR_SPEED);
+        if (elevatorY <= ELEVATOR_GROUND_Y) {
+          elevatorY = ELEVATOR_GROUND_Y;
+          elevatorState = 'ground';
+          playerOnElevator = true;
+          zoneStatusText.innerText = 'ห้องจัดแสดงหลัก';
+          zoneStatusText.style.color = '#4ea8de';
+          warpNotice.innerText = '🏠 กลับสู่ชั้นหลักแล้ว';
+          warpNotice.style.opacity = '1';
+          setTimeout(() => warpNotice.style.opacity = '0', 1200);
+        }
       }
 
-      if (inSmallRoom) {
+      elevatorGroup.position.y = elevatorY;
+      elevatorGlowRing.rotation.z += 0.025;
+
+      const onSkyLevel = elevatorY > 5 && (slothGroup.position.y > 5);
+
+      if (playerOnElevator) {
+        if (elevatorMoving) {
+          slothGroup.position.x = ELEVATOR_X;
+          slothGroup.position.z = ELEVATOR_Z;
+          slothGroup.position.y = elevatorY;
+          velocityY = 0;
+          isGrounded = true;
+        } else if (inputLen > 0.05) {
+          // ออกจากลิฟต์ได้เมื่อถึงชั้นแล้ว
+          playerOnElevator = false;
+          const stepX = Math.cos(cameraYaw) * 2.0;
+          const stepZ = -Math.sin(cameraYaw) * 2.0;
+          slothGroup.position.x += stepX;
+          slothGroup.position.z += stepZ;
+          slothGroup.position.y = elevatorY;
+        } else {
+          slothGroup.position.x = ELEVATOR_X;
+          slothGroup.position.z = ELEVATOR_Z;
+          slothGroup.position.y = elevatorY;
+          velocityY = 0;
+          isGrounded = true;
+        }
+      } else {
+        slothGroup.position.y += velocityY;
+        if (!isGrounded) velocityY -= gravity;
+
+        const floorY = (elevatorState === 'sky' && !playerOnElevator)
+          ? ELEVATOR_TOP_Y
+          : 0;
+
+        if (slothGroup.position.y <= floorY) {
+          slothGroup.position.y = floorY;
+          velocityY = 0;
+          isGrounded = true;
+        }
+      }
+
+      if (onSkyLevel) {
+        // ขอบเขตชั้นบนจัดการด้านล่าง
+      } else if (inSmallRoom) {
         const minX = SMALL_ROOM_OFFSET_X - SMALL_BOUNDARY;
         const maxX = SMALL_ROOM_OFFSET_X + SMALL_BOUNDARY;
         slothGroup.position.x = Math.max(minX, Math.min(maxX, slothGroup.position.x));
@@ -924,8 +1536,18 @@
         slothGroup.position.z = Math.max(-BOUNDARY, Math.min(BOUNDARY, slothGroup.position.z));
       }
 
+      // ลิฟต์และชั้นบนอยู่นอกข้อจำกัดความสูงของห้องหลัก
+      if (onSkyLevel && !playerOnElevator) {
+        const skyMinX = -SKY_DECK_RADIUS + 2;
+        const skyMaxX = SKY_DECK_RADIUS - 2;
+        const skyMinZ = -SKY_DECK_RADIUS + 2;
+        const skyMaxZ = SKY_DECK_RADIUS - 2;
+        slothGroup.position.x = Math.max(skyMinX, Math.min(skyMaxX, slothGroup.position.x));
+        slothGroup.position.z = Math.max(skyMinZ, Math.min(skyMaxZ, slothGroup.position.z));
+      }
+
       let nearAnyPortal = false;
-      for (let portal of portals) {
+      if (!onSkyLevel) for (let portal of portals) {
         const dist = slothGroup.position.distanceTo(portal.pos);
         if (dist < 4.5) {
           nearAnyPortal = true;
@@ -986,12 +1608,32 @@
         checkinBtn.style.display = 'none';
       }
 
+      // แสดงปุ่มใช้งานลิฟต์เมื่ออยู่ใกล้
+      const nearElevator = isPlayerNearElevator();
+      if (nearElevator && !elevatorMoving) {
+        elevatorPrompt.style.display = 'flex';
+        if (elevatorState === 'ground') {
+          setElevatorPrompt('🛗 ขึ้นลิฟต์ไปลานดูดาว  •  E', false);
+        } else {
+          setElevatorPrompt('🛗 ลงลิฟต์กลับด้านล่าง  •  E', true);
+        }
+      } else if (!elevatorMoving) {
+        elevatorPrompt.style.display = 'none';
+        lastElevatorPromptState = '';
+      }
+
+      // ปรับกล้องให้มองเห็นลานดูดาวชั้นบน
       const camDist = 16;
       let targetCamX = slothGroup.position.x + camDist * Math.sin(cameraYaw) * Math.cos(cameraPitch);
       let targetCamY = slothGroup.position.y + camDist * Math.sin(cameraPitch) + 2;
       let targetCamZ = slothGroup.position.z + camDist * Math.cos(cameraYaw) * Math.cos(cameraPitch);
 
-      if (inSmallRoom) {
+      if (onSkyLevel) {
+        const pad = 3;
+        targetCamX = Math.max(-SKY_DECK_RADIUS + pad, Math.min(SKY_DECK_RADIUS - pad, targetCamX));
+        targetCamZ = Math.max(-SKY_DECK_RADIUS + pad, Math.min(SKY_DECK_RADIUS - pad, targetCamZ));
+        targetCamY = Math.max(2, Math.min(ELEVATOR_TOP_Y + 25, targetCamY));
+      } else if (inSmallRoom) {
         const pad = 2.5;
         const sMinX = SMALL_ROOM_OFFSET_X - SMALL_BOUNDARY + pad;
         const sMaxX = SMALL_ROOM_OFFSET_X + SMALL_BOUNDARY - pad;
