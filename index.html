@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>3D Bunny - Night Sky & Stylized Grass</title>
   <style>
+html, body { touch-action: none; overscroll-behavior: none; }
+
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; user-select: none; -webkit-user-select: none; }
     body, html { width: 100%; height: 100%; overflow: hidden; background: #050814; touch-action: none; }
 
@@ -1880,27 +1882,66 @@ img, video {
       if (['KeyD', 'ArrowRight'].includes(e.code)) keys.d = false;
     });
 
-    let cameraYaw = 0, cameraPitch = 0.35, isDraggingCam = false, prevCamX = 0, prevCamY = 0;
-    
+    // =========================
+    // CAMERA TOUCH CONTROL
+    // ป้องกัน 2 นิ้วทำให้กล้องสะบัด / browser zoom
+    // =========================
+    let cameraYaw = 0, cameraPitch = 0.35;
+    let isDraggingCam = false;
+    let cameraPointerId = null;
+    let prevCamX = 0, prevCamY = 0;
+
     window.addEventListener('pointerdown', e => {
       if (e.target.closest('#ui-layer')) return;
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+
+      // รับเฉพาะ Pointer แรกที่เริ่มลากกล้อง
+      if (cameraPointerId !== null) return;
+
       if (e.clientX >= window.innerWidth / 2) {
-        isDraggingCam = true; 
-        prevCamX = e.clientX; 
+        cameraPointerId = e.pointerId;
+        isDraggingCam = true;
+        prevCamX = e.clientX;
         prevCamY = e.clientY;
+        e.preventDefault();
       }
-    });
+    }, { passive: false });
 
     window.addEventListener('pointermove', e => {
-      if (!isDraggingCam) return;
-      cameraYaw -= (e.clientX - prevCamX) * 0.006;
-      cameraPitch = Math.max(-Math.PI / 2 + 0.01, Math.min(Math.PI / 2 - 0.01, cameraPitch + (e.clientY - prevCamY) * 0.005));
-      prevCamX = e.clientX; 
-      prevCamY = e.clientY;
-    });
+      // สำคัญ: นิ้วที่ 2 จะไม่ขยับกล้อง
+      if (!isDraggingCam || e.pointerId !== cameraPointerId) return;
 
-    window.addEventListener('pointerup', () => isDraggingCam = false);
-    window.addEventListener('pointercancel', () => isDraggingCam = false);
+      e.preventDefault();
+
+      cameraYaw -= (e.clientX - prevCamX) * 0.006;
+      cameraPitch = Math.max(
+        -Math.PI / 2 + 0.01,
+        Math.min(
+          Math.PI / 2 - 0.01,
+          cameraPitch + (e.clientY - prevCamY) * 0.005
+        )
+      );
+
+      prevCamX = e.clientX;
+      prevCamY = e.clientY;
+    }, { passive: false });
+
+    function stopCameraPointer(e) {
+      if (cameraPointerId !== null && e.pointerId === cameraPointerId) {
+        isDraggingCam = false;
+        cameraPointerId = null;
+      }
+    }
+
+    window.addEventListener('pointerup', stopCameraPointer);
+    window.addEventListener('pointercancel', stopCameraPointer);
+    window.addEventListener('pointerleave', stopCameraPointer);
+
+    // ป้องกันมือถือแปล 2 นิ้วเป็น zoom / scroll ของหน้าเกม
+    const gameCanvas = document.querySelector('canvas');
+    if (gameCanvas) {
+      gameCanvas.style.touchAction = 'none';
+    }
 
     document.getElementById('btn-jump').addEventListener('pointerdown', (e) => { e.preventDefault(); jump(); });
     function jump() { if (isGrounded) { velocityY = 0.48; isGrounded = false; } }
@@ -2097,7 +2138,7 @@ img, video {
 <style>
 #fullscreenBtn{
     position:fixed;
-    top:12px;
+    top:52px;
     right:12px;
     z-index:999999;
     padding:9px 13px;
@@ -2121,7 +2162,7 @@ body:-webkit-full-screen{
 }
 @media (max-width:768px){
     #fullscreenBtn{
-        top:8px;
+        top:48px;
         right:8px;
         padding:8px 11px;
         font-size:13px;
