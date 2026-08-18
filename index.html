@@ -180,6 +180,9 @@
   </style>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 </head>
 <body>
 
@@ -1084,14 +1087,246 @@
       overheadTexture.needsUpdate = true;
     }
 
+    // ============================================================
+    // FIREBASE MULTIPLAYER
+    // เครื่องเรา -> Firebase Realtime Database -> เครื่องเพื่อน
+    // เก็บข้อมูลผู้เล่นไว้ที่ /players/<uid>
+    // ============================================================
+    const firebaseConfig = {
+      apiKey: "AIzaSyBcviRS1zRri103yo2rnS-iGmsjIwUAY9g",
+      authDomain: "k-savings.firebaseapp.com",
+      databaseURL: "https://k-savings-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "k-savings",
+      storageBucket: "k-savings.firebasestorage.app",
+      messagingSenderId: "825044662195",
+      appId: "1:825044662195:web:b796b35992aa4c2663bdc6",
+      measurementId: "G-YRM7B7MMVZ"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const firebaseAuth = firebase.auth();
+    const firebaseDB = firebase.database();
+    const playersRef = firebaseDB.ref('players');
+
+    let myPlayerId = null;
+    let firebaseReady = false;
+    const remotePlayers = new Map();
+
+    function setMultiplayerStatus(text, color) {
+      const el = document.getElementById('checkin-status');
+      if (!el) return;
+      el.innerText = text;
+      if (color) el.style.color = color;
+    }
+
+    function createRemoteOverhead(name, micActive, message) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 1024;
+      canvas.height = 512;
+      const ctx = canvas.getContext('2d');
+      const texture = new THREE.CanvasTexture(canvas);
+      const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, transparent: true }));
+      sprite.name = 'remoteOverheadSprite';
+      sprite.position.set(0, 5.2, 0);
+      sprite.scale.set(5.5, 2.75, 1);
+
+      const state = {
+        name: String(name || 'เพื่อน'),
+        mic: !!micActive,
+        message: String(message || '')
+      };
+
+      function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const safeName = state.name.slice(0, 14);
+        const safeMessage = state.message.slice(0, 24);
+
+        if (safeMessage) {
+          ctx.fillStyle = 'rgba(255,255,255,0.95)';
+          ctx.beginPath();
+          if (ctx.roundRect) ctx.roundRect(60, 20, 904, 180, 32); else ctx.fillRect(60, 20, 904, 180);
+          ctx.fill();
+          ctx.lineWidth = 8;
+          ctx.strokeStyle = '#4ea8de';
+          ctx.stroke();
+          ctx.font = 'bold 56px "Segoe UI", sans-serif';
+          ctx.fillStyle = '#1a1838';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(safeMessage, 512, 110);
+        }
+
+        ctx.fillStyle = 'rgba(15,10,25,0.88)';
+        ctx.beginPath();
+        if (ctx.roundRect) ctx.roundRect(80, 280, 864, 160, 40); else ctx.fillRect(80, 280, 864, 160);
+        ctx.fill();
+        ctx.lineWidth = 8;
+        ctx.strokeStyle = state.mic ? '#4ea8de' : '#ff75a0';
+        ctx.stroke();
+        ctx.font = 'bold 76px "Segoe UI", sans-serif';
+        ctx.fillStyle = '#ffffff';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(state.mic ? `🎙️ ${safeName}` : safeName, 512, 360);
+        texture.needsUpdate = true;
+      }
+
+      sprite.userData.setData = (newName, newMic, newMessage) => {
+        state.name = String(newName || 'เพื่อน');
+        state.mic = !!newMic;
+        state.message = String(newMessage || '');
+        draw();
+      };
+
+      draw();
+      return sprite;
+    }
+
+    function createRemotePlayer(data) {
+      const group = bunnyGroup.clone(true);
+      group.userData.remote = true;
+      group.userData.playerId = data.id;
+
+      const oldSprite = group.getObjectByName('overheadSprite');
+      if (oldSprite) {
+        group.remove(oldSprite);
+        if (oldSprite.material) oldSprite.material.dispose();
+      }
+
+      const sprite = createRemoteOverhead(data.name, !!data.mic, data.chat || '');
+      group.add(sprite);
+      group.position.set(
+        Number(data.x) || 0,
+        Number(data.y) || 0,
+        Number(data.z) || 0
+      );
+      group.rotation.y = Number(data.rotation) || 0;
+      scene.add(group);
+
+      remotePlayers.set(data.id, {
+        group,
+        data,
+        lastSeen: performance.now()
+      });
+
+      return group;
+    }
+
+    function updateRemotePlayer(data) {
+      if (!data || data.id === myPlayerId) return;
+
+      let entry = remotePlayers.get(data.id);
+      if (!entry) {
+        entry = {
+          group: createRemotePlayer(data),
+          data,
+          lastSeen: performance.now()
+        };
+      }
+
+      entry.data = data;
+      entry.lastSeen = performance.now();
+
+      const target = new THREE.Vector3(
+        Number(data.x) || 0,
+        Number(data.y) || 0,
+        Number(data.z) || 0
+      );
+
+      // ทำให้การเคลื่อนที่ของเพื่อนนุ่มขึ้น ไม่กระตุก
+      entry.group.position.lerp(target, 0.35);
+      entry.group.rotation.y = Number(data.rotation) || 0;
+
+      const sprite = entry.group.getObjectByName('remoteOverheadSprite');
+      if (sprite && sprite.userData.setData) {
+        const key = `${data.name || ''}|${!!data.mic}|${data.chat || ''}`;
+        if (sprite.userData.lastKey !== key) {
+          sprite.userData.lastKey = key;
+          sprite.userData.setData(data.name, data.mic, data.chat || '');
+        }
+      }
+    }
+
+    function removeRemotePlayer(id) {
+      const entry = remotePlayers.get(id);
+      if (!entry) return;
+
+      // remote player ถูก clone จาก bunnyGroup ของเรา จึงไม่ dispose geometry/material ที่ใช้ร่วมกัน
+      scene.remove(entry.group);
+      remotePlayers.delete(id);
+    }
+
+    function publishMyPlayer() {
+      if (!firebaseReady || !myPlayerId || typeof bunnyGroup === 'undefined') return;
+
+      const name = (currentPlayerName || 'Bunny').slice(0, 14);
+
+      playersRef.child(myPlayerId).update({
+        id: myPlayerId,
+        name,
+        x: Number(bunnyGroup.position.x.toFixed(3)),
+        y: Number(bunnyGroup.position.y.toFixed(3)),
+        z: Number(bunnyGroup.position.z.toFixed(3)),
+        rotation: Number(bunnyGroup.rotation.y.toFixed(3)),
+        mic: !!isMicActive,
+        chat: currentChatMessage || '',
+        zone: inSmallRoom ? 'secret' : 'main',
+        updatedAt: firebase.database.ServerValue.TIMESTAMP
+      }).catch(err => console.warn('Firebase player update:', err));
+    }
+
+    function startMultiplayer() {
+      firebaseAuth.signInAnonymously().then(result => {
+        myPlayerId = result.user.uid;
+        firebaseReady = true;
+
+        const myRef = playersRef.child(myPlayerId);
+        myRef.onDisconnect().remove();
+
+        playersRef.on('value', snapshot => {
+          const data = snapshot.val() || {};
+          const seen = new Set();
+
+          Object.entries(data).forEach(([id, player]) => {
+            if (!player || id === myPlayerId) return;
+            seen.add(id);
+            updateRemotePlayer({ ...player, id });
+          });
+
+          [...remotePlayers.keys()].forEach(id => {
+            if (!seen.has(id)) removeRemotePlayer(id);
+          });
+        }, error => {
+          console.error('Firebase multiplayer read error:', error);
+          setMultiplayerStatus('Firebase: อ่านข้อมูลเพื่อนไม่ได้', '#ff75a0');
+        });
+
+        // ส่งตำแหน่งทุก 100ms
+        setInterval(publishMyPlayer, 100);
+        publishMyPlayer();
+        setMultiplayerStatus('ออนไลน์ • เห็นเพื่อนแล้ว', '#4ea8de');
+      }).catch(error => {
+        console.error('Firebase anonymous auth error:', error);
+        setMultiplayerStatus('Firebase เชื่อมต่อไม่ได้', '#ff75a0');
+      });
+    }
+
+    // ============================================================
+    // END FIREBASE MULTIPLAYER
+    // ============================================================
+
     const nameInput = document.getElementById('player-name-input');
     nameInput.addEventListener('input', (e) => {
       currentPlayerName = e.target.value.trim();
       renderOverheadUI();
+      publishMyPlayer();
     });
 
     renderOverheadUI();
     scene.add(bunnyGroup);
+
+    // เริ่มเชื่อมต่อ Multiplayer หลังจากสร้างกระต่ายของเราแล้ว
+    startMultiplayer();
 
     // --- 28 Black Signs Setup ---
     const signs = [];
@@ -1216,15 +1451,16 @@
         addMessageToHistory(currentPlayerName || "Bunny", msg);
         currentChatMessage = msg.length > 24 ? msg.substring(0, 22) + "..." : msg;
         renderOverheadUI();
+        publishMyPlayer();
         if (chatMessageTimeout) clearTimeout(chatMessageTimeout);
-        chatMessageTimeout = setTimeout(() => { currentChatMessage = ""; renderOverheadUI(); }, 5000);
+        chatMessageTimeout = setTimeout(() => { currentChatMessage = ""; renderOverheadUI(); publishMyPlayer(); }, 5000);
         chatInput.value = "";
       }
     }
 
     btnSend.addEventListener('click', sendChatMessage);
     chatInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') sendChatMessage(); });
-    btnMic.addEventListener('click', () => { isMicActive = !isMicActive; btnMic.classList.toggle('active', isMicActive); renderOverheadUI(); });
+    btnMic.addEventListener('click', () => { isMicActive = !isMicActive; btnMic.classList.toggle('active', isMicActive); renderOverheadUI(); publishMyPlayer(); });
 
     const checkinBtn = document.getElementById('checkin-prompt');
     const checkinStatusText = document.getElementById('checkin-status');
