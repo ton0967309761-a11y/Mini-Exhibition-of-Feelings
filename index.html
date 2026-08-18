@@ -183,6 +183,22 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+
+<style id="high-quality-rendering">
+html, body {
+    image-rendering: auto;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+canvas {
+    image-rendering: auto;
+    -webkit-tap-highlight-color: transparent;
+}
+img, video {
+    image-rendering: auto;
+}
+</style>
+
 </head>
 <body>
 
@@ -283,6 +299,7 @@
     const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2.5));
     renderer.shadowMap.enabled = true;
     document.body.appendChild(renderer.domElement);
 
@@ -2129,6 +2146,55 @@ function updateFullscreenButton(){
 
 document.addEventListener("fullscreenchange",updateFullscreenButton);
 document.addEventListener("webkitfullscreenchange",updateFullscreenButton);
+</script>
+
+
+<script id="high-quality-textures">
+(function applyHighQualityTextures() {
+    if (typeof THREE === "undefined") return;
+
+    function sharpenTexture(texture) {
+        if (!texture) return;
+        texture.minFilter = THREE.LinearMipmapLinearFilter;
+        texture.magFilter = THREE.LinearFilter;
+        texture.anisotropy = Math.min(
+            (typeof renderer !== "undefined" && renderer.capabilities)
+                ? renderer.capabilities.getMaxAnisotropy()
+                : 8,
+            16
+        );
+        texture.needsUpdate = true;
+    }
+
+    function scan() {
+        if (typeof scene === "undefined" || !scene.traverse) return;
+        scene.traverse(function(obj) {
+            if (!obj) return;
+
+            if (obj.material) {
+                const materials = Array.isArray(obj.material)
+                    ? obj.material
+                    : [obj.material];
+
+                materials.forEach(function(mat) {
+                    if (!mat) return;
+                    [
+                        "map", "alphaMap", "normalMap", "roughnessMap",
+                        "metalnessMap", "emissiveMap", "aoMap"
+                    ].forEach(function(key) {
+                        if (mat[key]) sharpenTexture(mat[key]);
+                    });
+                });
+            }
+        });
+    }
+
+    // Run repeatedly because some game assets are created after startup.
+    scan();
+    setTimeout(scan, 500);
+    setTimeout(scan, 1500);
+    setTimeout(scan, 3000);
+})();
 </script>
 
 </body>
