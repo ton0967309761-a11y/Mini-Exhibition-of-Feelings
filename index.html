@@ -201,6 +201,13 @@ img, video {
 }
 </style>
 
+
+<style id="multi-touch-protection">
+html, body, canvas {
+  touch-action: none !important;
+  overscroll-behavior: none !important;
+}
+</style>
 </head>
 <body>
 
@@ -1883,19 +1890,42 @@ img, video {
     });
 
     // =========================
-    // CAMERA TOUCH CONTROL
-    // ป้องกัน 2 นิ้วทำให้กล้องสะบัด / browser zoom
+    // CAMERA TOUCH CONTROL — MULTI-TOUCH SAFE
+    // นิ้วเดียว = หมุนกล้อง
+    // ตั้งแต่ 2 นิ้วขึ้นไป = ล็อกกล้องทันที จนกว่าจะปล่อยนิ้วหมด
+    // เพื่อไม่ให้กล้องสะบัดจาก pointer ของนิ้วที่สอง
     // =========================
     let cameraYaw = 0, cameraPitch = 0.35;
     let isDraggingCam = false;
     let cameraPointerId = null;
     let prevCamX = 0, prevCamY = 0;
+    const activeTouchPointers = new Set();
+    let multiTouchLock = false;
+
+    function stopCameraDrag() {
+      isDraggingCam = false;
+      cameraPointerId = null;
+    }
 
     window.addEventListener('pointerdown', e => {
+      // นับเฉพาะนิ้วบนมือถือ
+      if (e.pointerType === 'touch') {
+        activeTouchPointers.add(e.pointerId);
+
+        // มีตั้งแต่ 2 นิ้ว = ล็อกกล้องทันที
+        if (activeTouchPointers.size >= 2) {
+          multiTouchLock = true;
+          stopCameraDrag();
+          return;
+        }
+      }
+
+      // ปุ่ม/จอย/UI ไม่ควรเริ่มหมุนกล้อง
       if (e.target.closest('#ui-layer')) return;
       if (e.pointerType === 'mouse' && e.button !== 0) return;
 
-      // รับเฉพาะ Pointer แรกที่เริ่มลากกล้อง
+      // ถ้าพึ่งเกิด multi-touch ห้ามเริ่มกล้องจนกว่านิ้วจะปล่อยหมด
+      if (multiTouchLock || activeTouchPointers.size > 1) return;
       if (cameraPointerId !== null) return;
 
       if (e.clientX >= window.innerWidth / 2) {
@@ -1908,17 +1938,25 @@ img, video {
     }, { passive: false });
 
     window.addEventListener('pointermove', e => {
-      // สำคัญ: นิ้วที่ 2 จะไม่ขยับกล้อง
+      // นิ้วที่ 2 หรือ multi-touch ไม่มีสิทธิ์ขยับกล้อง
+      if (e.pointerType === 'touch' && activeTouchPointers.size >= 2) {
+        stopCameraDrag();
+        return;
+      }
+
       if (!isDraggingCam || e.pointerId !== cameraPointerId) return;
 
       e.preventDefault();
 
-      cameraYaw -= (e.clientX - prevCamX) * 0.006;
+      const dx = e.clientX - prevCamX;
+      const dy = e.clientY - prevCamY;
+
+      cameraYaw -= dx * 0.006;
       cameraPitch = Math.max(
         -Math.PI / 2 + 0.01,
         Math.min(
           Math.PI / 2 - 0.01,
-          cameraPitch + (e.clientY - prevCamY) * 0.005
+          cameraPitch + dy * 0.005
         )
       );
 
@@ -1926,21 +1964,31 @@ img, video {
       prevCamY = e.clientY;
     }, { passive: false });
 
-    function stopCameraPointer(e) {
-      if (cameraPointerId !== null && e.pointerId === cameraPointerId) {
-        isDraggingCam = false;
-        cameraPointerId = null;
+    function releasePointer(e) {
+      if (e.pointerType === 'touch') {
+        activeTouchPointers.delete(e.pointerId);
+
+        // หลังมี 2 นิ้วแล้ว ไม่ให้กลับไปหมุนด้วยนิ้วที่ยังค้างอยู่
+        // ต้องปล่อยนิ้วทั้งหมดก่อน แล้วเริ่มสัมผัสใหม่
+        if (activeTouchPointers.size === 0) {
+          multiTouchLock = false;
+        }
+      }
+
+      if (e.pointerId === cameraPointerId) {
+        stopCameraDrag();
       }
     }
 
-    window.addEventListener('pointerup', stopCameraPointer);
-    window.addEventListener('pointercancel', stopCameraPointer);
-    window.addEventListener('pointerleave', stopCameraPointer);
+    window.addEventListener('pointerup', releasePointer, { passive: true });
+    window.addEventListener('pointercancel', releasePointer, { passive: true });
 
-    // ป้องกันมือถือแปล 2 นิ้วเป็น zoom / scroll ของหน้าเกม
+    // ป้องกัน browser gesture/zoom บนพื้นที่เกม
     const gameCanvas = document.querySelector('canvas');
     if (gameCanvas) {
       gameCanvas.style.touchAction = 'none';
+      gameCanvas.style.userSelect = 'none';
+      gameCanvas.style.webkitUserSelect = 'none';
     }
 
     document.getElementById('btn-jump').addEventListener('pointerdown', (e) => { e.preventDefault(); jump(); });
