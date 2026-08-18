@@ -211,6 +211,7 @@
     </div>
 
     <div id="checkin-prompt">📝 เช็คอิน / แก้ไขป้าย</div>
+    <button id="cancel-checkin-btn" style="display:none; position:fixed; left:50%; transform:translateX(-50%); bottom:92px; z-index:30; pointer-events:auto; touch-action:manipulation; padding:7px 13px; border:1px solid #ff6b8a; border-radius:10px; background:rgba(25,8,15,.92); color:#ff9ab0; font-weight:bold; font-size:11px; cursor:pointer; box-shadow:0 4px 14px rgba(0,0,0,.35);">❌ ยกเลิกเช็คอิน</button>
     <div id="elevator-prompt">🛗</div>
     <div id="joystick-base"><div id="joystick-knob"></div></div>
     <div class="btn-jump" id="btn-jump">🦘</div>
@@ -1108,6 +1109,8 @@
     const firebaseDB = firebase.database();
     const playersRef = firebaseDB.ref('players');
     const signsRef = firebaseDB.ref('signs');
+    // Registry สำหรับกันชื่อซ้ำทั้งชื่อผู้เล่นและชื่อที่ปรากฏบนป้าย
+    const nameRegistryRef = firebaseDB.ref('nameRegistry');
 
     let myPlayerId = null;
     let firebaseReady = false;
@@ -1118,6 +1121,160 @@
       if (!el) return;
       el.innerText = text;
       if (color) el.style.color = color;
+    }
+
+    // ============================================================
+    // ระบบกันชื่อซ้ำ
+    // - ไม่สนใจตัวพิมพ์เล็ก/ใหญ่
+    // - ตัดช่องว่างหัวท้าย
+    // - ชื่อของผู้เล่นทุกคนต้องไม่ซ้ำกัน
+    // - ชื่อที่แสดงบนป้ายก็ใช้กติกาเดียวกัน
+    // - ผู้เล่นคนเดิมสามารถใช้ชื่อเดิมบนป้ายของตัวเองได้
+    // ============================================================
+    function normalizePlayerName(name) {
+      return String(name || '').trim().replace(/\s+/g, ' ').toLowerCase();
+    }
+
+    function cleanPlayerName(name) {
+      return String(name || '').trim().replace(/\s+/g, ' ').slice(0, 7);
+    }
+
+    async function isNameAlreadyUsed(name, exceptUid = null) {
+      const normalized = normalizePlayerName(name);
+      if (!normalized) return false;
+
+      const [playersSnap, signsSnap, registrySnap] = await Promise.all([
+        playersRef.once('value'),
+        signsRef.once('value'),
+        nameRegistryRef.once('value')
+      ]);
+
+      const players = playersSnap.val() || {};
+      for (const [uid, player] of Object.entries(players)) {
+        if (exceptUid && String(uid) === String(exceptUid)) continue;
+        if (normalizePlayerName(player && player.name) === normalized) return true;
+      }
+
+      const signsData = signsSnap.val() || {};
+      for (const sign of Object.values(signsData)) {
+        if (sign && normalizePlayerName(sign.ownerName) === normalized) {
+          if (!exceptUid || String(sign.ownerId) !== String(exceptUid)) return true;
+        }
+      }
+
+      const registeredUid = registrySnap.child(normalized).val();
+      if (registeredUid && (!exceptUid || String(registeredUid) !== String(exceptUid))) return true;
+
+      return false;
+    }
+
+    async function reservePlayerName(name, uid) {
+      const cleanName = cleanPlayerName(name);
+      const normalized = normalizePlayerName(cleanName);
+
+      if (!cleanName) return { ok: false, reason: 'กรุณาตั้งชื่อก่อน' };
+      if (cleanName.length > 7) return { ok: false, reason: 'ชื่อยาวเกิน 7 ตัวอักษร' };
+      if (!normalized) return { ok: false, reason: 'ชื่อไม่ถูกต้อง' };
+
+      // ตรวจทั้งข้อมูลผู้เล่น/ป้ายเดิมก่อน
+      if (await isNameAlreadyUsed(cleanName, uid)) {
+        return { ok: false, reason: `ชื่อ \"${cleanName}\" ถูกใช้งานแล้ว` };
+      }
+
+      // Transaction กันกรณีเพื่อน 2 คนตั้งชื่อเดียวกันพร้อมกัน
+      const nameRef = nameRegistryRef.child(normalized);
+      const result = await nameRef.transaction(current => {
+        if (current === null || String(current) === String(uid)) return uid;
+        return;
+      });
+
+      if (!result.committed) {
+        return { ok: false, reason: `ชื่อ \"${cleanName}\" ถูกใช้งานแล้ว` };
+      }
+
+      return { ok: true, name: cleanName, normalized };
+    }
+
+    async function releasePlayerName(name, uid) {
+      const normalized = normalizePlayerName(name);
+      if (!normalized) return;
+      const ref = nameRegistryRef.child(normalized);
+      const snap = await ref.once('value');
+      if (snap.exists() && String(snap.val()) === String(uid)) {
+        await ref.remove();
+      }
+    }
+
+    async function changePlayerName(newName) {
+      if (!firebaseReady || !myPlayerId) {
+        alert('กำลังเชื่อมต่อ Firebase กรุณารอสักครู่แล้วลองใหม่');
+        return false;
+      }
+
+      const cleanName = cleanPlayerName(newName);
+      if (!cleanName) {
+        alert('กรุณาใส่ชื่อผู้เล่น');
+        nameInput.value = currentPlayerName || 'Bunny';
+        return false;
+      }
+
+      if (cleanName.length > 7) {
+        alert('❌ ชื่อผู้เล่นต้องไม่เกิน 7 ตัวอักษร');
+        nameInput.value = currentPlayerName;
+        return false;
+      }
+
+      if (normalizePlayerName(cleanName) === normalizePlayerName(currentPlayerName)) {
+        nameInput.value = currentPlayerName;
+        return true;
+      }
+
+      const oldName = currentPlayerName;
+      const reserved = await reservePlayerName(cleanName, myPlayerId);
+      if (!reserved.ok) {
+        alert(`❌ เปลี่ยนชื่อไม่ได้\n\n${reserved.reason}\n\nกรุณาเลือกชื่ออื่น`);
+        nameInput.value = currentPlayerName;
+        nameInput.style.borderColor = '#ff75a0';
+        setTimeout(() => { nameInput.style.borderColor = '#4ea8de'; }, 1200);
+        return false;
+      }
+
+      currentPlayerName = cleanName;
+      nameInput.value = currentPlayerName;
+      renderOverheadUI();
+
+      try {
+        await playersRef.child(myPlayerId).update({ name: currentPlayerName });
+        if (normalizePlayerName(oldName) !== normalizePlayerName(currentPlayerName)) {
+          await releasePlayerName(oldName, myPlayerId);
+        }
+
+        // อัปเดตชื่อบนป้ายของเราให้ตรงกับชื่อผู้เล่นใหม่
+        const signsSnap = await signsRef.once('value');
+        const updates = {};
+        signsSnap.forEach(child => {
+          const sign = child.val();
+          if (sign && String(sign.ownerId) === String(myPlayerId)) {
+            updates[`${child.key}/ownerName`] = currentPlayerName;
+          }
+        });
+        if (Object.keys(updates).length) await signsRef.update(updates);
+
+        // เปลี่ยนจุด onDisconnect ให้ลบชื่อใหม่เมื่อเครื่องนี้หลุด
+        await nameRegistryRef.child(normalizePlayerName(currentPlayerName)).onDisconnect().remove();
+
+        publishMyPlayer();
+        return true;
+      } catch (error) {
+        console.error('Change player name error:', error);
+        await releasePlayerName(currentPlayerName, myPlayerId).catch(() => {});
+        const rollback = await reservePlayerName(oldName || 'Bunny', myPlayerId).catch(() => ({ ok: false }));
+        currentPlayerName = rollback.ok ? rollback.name : 'Bunny';
+        nameInput.value = currentPlayerName;
+        renderOverheadUI();
+        alert('เปลี่ยนชื่อไม่สำเร็จ\n' + error.message);
+        return false;
+      }
     }
 
     function createRemoteOverhead(name, micActive, message) {
@@ -1277,12 +1434,27 @@
     }
 
     function startMultiplayer() {
-      firebaseAuth.signInAnonymously().then(result => {
+      firebaseAuth.signInAnonymously().then(async result => {
         myPlayerId = result.user.uid;
+
+        // จองชื่อเริ่มต้นก่อนประกาศตัวเองออนไลน์
+        const initialName = cleanPlayerName(nameInput.value || 'Bunny') || 'Bunny';
+        let reservedInitial = await reservePlayerName(initialName, myPlayerId);
+        if (!reservedInitial.ok) {
+          let fallback = `Bunny${Math.floor(Math.random() * 9999)}`;
+          reservedInitial = await reservePlayerName(fallback, myPlayerId);
+          if (!reservedInitial.ok) throw new Error('ไม่สามารถจองชื่อผู้เล่นได้');
+        }
+
+        currentPlayerName = reservedInitial.name;
+        nameInput.value = currentPlayerName;
         firebaseReady = true;
+        renderOverheadUI();
 
         const myRef = playersRef.child(myPlayerId);
         myRef.onDisconnect().remove();
+        const myNameRegistryRef = nameRegistryRef.child(normalizePlayerName(currentPlayerName));
+        myNameRegistryRef.onDisconnect().remove();
 
         playersRef.on('value', snapshot => {
           const data = snapshot.val() || {};
@@ -1317,10 +1489,27 @@
     // ============================================================
 
     const nameInput = document.getElementById('player-name-input');
+
+    // พิมพ์ได้ตามปกติ แต่จะบันทึกชื่อจริงเมื่อกด Enter หรือออกจากช่อง
     nameInput.addEventListener('input', (e) => {
-      currentPlayerName = e.target.value.trim();
-      renderOverheadUI();
-      publishMyPlayer();
+      const preview = e.target.value.slice(0, 7);
+      if (e.target.value.length > 7) e.target.value = preview;
+    });
+
+    nameInput.addEventListener('keydown', async (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        await changePlayerName(nameInput.value);
+        nameInput.blur();
+      }
+    });
+
+    nameInput.addEventListener('blur', async () => {
+      if (nameInput.value.trim() !== currentPlayerName) {
+        await changePlayerName(nameInput.value);
+      } else {
+        nameInput.value = currentPlayerName;
+      }
     });
 
     renderOverheadUI();
@@ -1415,9 +1604,11 @@
         if (myCheckedSign !== null) {
           checkinStatusText.innerText = `เช็คอินที่ ป้าย #${myCheckedSign + 1}`;
           checkinStatusText.style.color = '#4ea8de';
+          if (cancelCheckinBtn) cancelCheckinBtn.style.display = 'block';
         } else {
           checkinStatusText.innerText = 'ยังไม่เช็คอิน';
           checkinStatusText.style.color = '#ff85a1';
+          if (cancelCheckinBtn) cancelCheckinBtn.style.display = 'none';
         }
       }, error => {
         console.error('Firebase signs read error:', error);
@@ -1434,7 +1625,7 @@
 
       const payload = {
         ownerId: myPlayerId,
-        ownerName: (currentPlayerName || 'ผู้เล่น').slice(0, 14),
+        ownerName: cleanPlayerName(currentPlayerName || 'ผู้เล่น'),
         message: message.trim(),
         updatedAt: firebase.database.ServerValue.TIMESTAMP
       };
@@ -1533,10 +1724,49 @@
     btnMic.addEventListener('click', () => { isMicActive = !isMicActive; btnMic.classList.toggle('active', isMicActive); renderOverheadUI(); publishMyPlayer(); });
 
     const checkinBtn = document.getElementById('checkin-prompt');
+    const cancelCheckinBtn = document.getElementById('cancel-checkin-btn');
     const checkinStatusText = document.getElementById('checkin-status');
     const zoneStatusText = document.getElementById('zone-status');
     const warpNotice = document.getElementById('warp-notice');
     let nearbySign = null;
+
+    async function cancelMyCheckin() {
+      if (!firebaseReady || !myPlayerId) {
+        alert('กำลังเชื่อมต่อ Firebase กรุณารอสักครู่แล้วลองใหม่');
+        return;
+      }
+
+      if (playerCheckedInSignIndex === null) {
+        alert('ตอนนี้คุณยังไม่ได้เช็คอินป้ายไหน');
+        return;
+      }
+
+      const sign = signs[playerCheckedInSignIndex];
+      if (!sign) return;
+
+      // ลบได้เฉพาะป้ายที่เป็นของเราเท่านั้น
+      if (!sign.ownerId || String(sign.ownerId) !== String(myPlayerId)) {
+        alert('ไม่สามารถยกเลิกเช็คอินนี้ได้ เพราะป้ายนี้ไม่ใช่ของคุณ');
+        return;
+      }
+
+      const ok = confirm(`ต้องการยกเลิกเช็คอินที่ป้าย #${sign.index + 1} ใช่ไหม?\n\nข้อความ: ${sign.message || '-'}\n\nหลังยกเลิก เพื่อนจะเห็นว่าป้ายนี้ว่างทันที`);
+      if (!ok) return;
+
+      try {
+        await signsRef.child(String(sign.index)).remove();
+        // listener จะอัปเดตป้ายและสถานะให้ทุกเครื่องเอง
+      } catch (error) {
+        console.error('Firebase check-in cancel error:', error);
+        alert('ยกเลิกเช็คอินไม่สำเร็จ\n' + error.message);
+      }
+    }
+
+    cancelCheckinBtn.addEventListener('click', async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      await cancelMyCheckin();
+    });
 
     checkinBtn.addEventListener('pointerdown', async (e) => {
       e.preventDefault();
