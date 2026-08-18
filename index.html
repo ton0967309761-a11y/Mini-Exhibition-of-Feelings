@@ -297,10 +297,12 @@ img, video {
     scene.fog = new THREE.FogExp2(0x060919, 0.0025);
 
     const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
     renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2.5));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 3));
+    renderer.outputEncoding = THREE.sRGBEncoding;
     renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     document.body.appendChild(renderer.domElement);
 
     const ambientLight = new THREE.AmbientLight(0x7080b0, 0.85);
@@ -309,6 +311,10 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2.5));
     const moonLight = new THREE.DirectionalLight(0xb0c4de, 1.2);
     moonLight.position.set(-60, 120, -60);
     moonLight.castShadow = true;
+    moonLight.shadow.mapSize.width = 2048;
+    moonLight.shadow.mapSize.height = 2048;
+    moonLight.shadow.camera.near = 0.5;
+    moonLight.shadow.camera.far = 500;
     scene.add(moonLight);
 
     // --- [อัปเดต] สร้างดวงจันทร์ให้สมจริงยิ่งขึ้น ---
@@ -1070,6 +1076,7 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2.5));
     const overheadCtx = overheadCanvas.getContext('2d');
     const overheadTexture = new THREE.CanvasTexture(overheadCanvas);
     const overheadSprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: overheadTexture }));
+    overheadSprite.name = 'overheadSprite';
     overheadSprite.position.set(0, 5.2, 0); 
     overheadSprite.scale.set(5.5, 2.75, 1);
     bunnyGroup.add(overheadSprite);
@@ -1491,9 +1498,17 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2.5));
           setMultiplayerStatus('Firebase: อ่านข้อมูลเพื่อนไม่ได้', '#ff75a0');
         });
 
-        // ส่งตำแหน่งทุก 100ms
-        setInterval(publishMyPlayer, 100);
+        // ส่งตำแหน่งถี่พอให้เพื่อนเห็นการเคลื่อนไหวลื่น แต่ไม่ยิงฐานข้อมูลหนักเกินไป
+        setInterval(publishMyPlayer, 120);
         publishMyPlayer();
+
+        // กันตัวละครค้าง หากเครื่องเพื่อนปิด/หลุดโดย Firebase ยังไม่ทันแจ้ง child_removed
+        setInterval(() => {
+          const now = performance.now();
+          [...remotePlayers.entries()].forEach(([id, entry]) => {
+            if (now - entry.lastSeen > 5000) removeRemotePlayer(id);
+          });
+        }, 2000);
         setMultiplayerStatus('ออนไลน์ • เห็นเพื่อนแล้ว', '#4ea8de');
       }).catch(error => {
         console.error('Firebase anonymous auth error:', error);
@@ -2072,6 +2087,7 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2.5));
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 3));
     });
   </script>
 
