@@ -92,7 +92,7 @@ html, body { touch-action: none; overscroll-behavior: none; }
 
     #joystick-base {
       position: absolute; bottom: 15px; left: 15px;
-      width: 80px; height: 80px;
+      width: 110px; height: 110px;
       background: rgba(78, 168, 222, 0.15);
       border: 1.5px solid rgba(255, 117, 160, 0.5);
       border-radius: 50%;
@@ -100,7 +100,7 @@ html, body { touch-action: none; overscroll-behavior: none; }
     }
     #joystick-knob {
       position: absolute; top: 50%; left: 50%;
-      width: 30px; height: 30px;
+      width: 44px; height: 44px;
       background: rgba(255, 117, 160, 0.85);
       border: 1.5px solid #90e0ef;
       border-radius: 50%;
@@ -109,21 +109,21 @@ html, body { touch-action: none; overscroll-behavior: none; }
     }
 
     .elevator-prompt {
-      position: absolute; bottom: 100px; right: 15px;
-      width: 42px; height: 42px;
+      position: absolute; bottom: 125px; right: 18px;
+      width: 58px; height: 58px;
       border-radius: 50%;
       background: rgba(76, 201, 240, 0.4);
       border: 1.5px solid #4cc9f0;
-      color: #fff; font-size: 16px;
+      color: #fff; font-size: 23px;
       display: none; align-items: center; justify-content: center;
       pointer-events: auto; cursor: pointer; z-index: 20;
     }
     .elevator-prompt.sky { background: rgba(247, 37, 133, 0.4); border-color: #f72585; }
 
     .btn-jump { 
-      position: absolute; bottom: 50px; right: 15px; width: 42px; height: 42px; 
+      position: absolute; bottom: 52px; right: 18px; width: 58px; height: 58px; 
       border-radius: 50%; background: rgba(78, 168, 222, 0.4); 
-      border: 1.5px solid #4ea8de; color: #fff; font-size: 16px;
+      border: 1.5px solid #4ea8de; color: #fff; font-size: 23px;
       display: flex; align-items: center; justify-content: center;
       pointer-events: auto; cursor: pointer; z-index: 20;
     }
@@ -1861,9 +1861,9 @@ html, body, canvas {
       let deltaX = clientX - (rect.left + rect.width / 2);
       let deltaY = clientY - (rect.top + rect.height / 2);
       let dist = Math.hypot(deltaX, deltaY);
-      if (dist > 25) { deltaX = (deltaX / dist) * 25; deltaY = (deltaY / dist) * 25; }
+      if (dist > 34) { deltaX = (deltaX / dist) * 34; deltaY = (deltaY / dist) * 34; }
       joystickKnob.style.transform = `translate(calc(-50% + ${deltaX}px), calc(-50% + ${deltaY}px))`;
-      joyInputX = deltaX / 25; joyInputY = deltaY / 25;
+      joyInputX = deltaX / 34; joyInputY = deltaY / 34;
     }
     // MULTI-TOUCH CONTROL: joystick + camera simultaneously
     let joystickPointerId = null;
@@ -2255,7 +2255,7 @@ html, body, canvas {
     });
   </script>
 
-<!-- MOBILE FULLSCREEN -->
+<!-- AUTO DEVICE FULLSCREEN -->
 <button id="fullscreenBtn" type="button" onclick="toggleFullscreen()">⛶ เต็มจอ</button>
 
 <style>
@@ -2291,41 +2291,135 @@ body:-webkit-full-screen{
         font-size:13px;
     }
 }
+
+
+/* Larger touch controls */
+@media (max-width:768px){
+  #joystick-base{width:120px;height:120px;bottom:18px;left:18px;}
+  #joystick-knob{width:48px;height:48px;}
+  .btn-jump{width:64px;height:64px;right:18px;bottom:54px;font-size:25px;}
+  .elevator-prompt{width:64px;height:64px;right:18px;bottom:132px;font-size:25px;}
+}
 </style>
 
 <script>
-function toggleFullscreen(){
-    const doc=document;
-    const el=document.documentElement;
+(function(){
+    const doc = document;
+    const el = document.documentElement;
+    const btn = document.getElementById('fullscreenBtn');
 
-    if(!doc.fullscreenElement && !doc.webkitFullscreenElement){
-        if(el.requestFullscreen){
-            el.requestFullscreen().catch(()=>{});
-        }else if(el.webkitRequestFullscreen){
-            el.webkitRequestFullscreen();
-        }else{
-            // iOS Safari ไม่รองรับ Fullscreen API บางกรณี
-            alert("เบราว์เซอร์นี้ไม่รองรับโหมดเต็มจอ ให้กดเมนู Share/••• แล้วเลือก 'เพิ่มไปยังหน้าจอโฮม' เพื่อเปิดเกมแบบแอป");
-        }
-    }else{
-        if(doc.exitFullscreen){
-            doc.exitFullscreen().catch(()=>{});
-        }else if(doc.webkitExitFullscreen){
-            doc.webkitExitFullscreen();
-        }
+    // ตรวจอุปกรณ์/เบราว์เซอร์อัตโนมัติ
+    const ua = navigator.userAgent || '';
+    const platform = navigator.platform || '';
+    const isIOS = /iPad|iPhone|iPod/.test(ua) ||
+                  (platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const isAndroid = /Android/i.test(ua);
+    const isMac = /Macintosh|Mac OS X/i.test(ua) && !isIOS;
+    const isPC = /Windows|Linux/i.test(ua);
+
+    function isFullscreen(){
+        return !!(
+            doc.fullscreenElement ||
+            doc.webkitFullscreenElement ||
+            doc.msFullscreenElement
+        );
     }
+
+    function updateFullscreenButton(){
+        if (!btn) return;
+        btn.textContent = isFullscreen() ? '⛶ ออกจากเต็มจอ' : '⛶ เต็มจอ';
+    }
+
+    // เลือกวิธีที่เหมาะกับอุปกรณ์:
+    // Android / PC / Mac: Fullscreen API ก่อน แล้ว fallback WebKit
+    // iOS: ใช้ WebKit fullscreen ถ้าเบราว์เซอร์รองรับ
+    async function enterFullscreen(){
+        try {
+            if (isIOS) {
+                // iOS Safari รองรับ webkitEnterFullscreen กับ media
+                // แต่ไม่รองรับ document fullscreen ในหลายเวอร์ชัน
+                if (el.webkitRequestFullscreen) {
+                    el.webkitRequestFullscreen();
+                    return true;
+                }
+                if (document.body.webkitRequestFullscreen) {
+                    document.body.webkitRequestFullscreen();
+                    return true;
+                }
+
+                // ไม่มี Fullscreen API บน iOS: ไม่บังคับ/ไม่แจ้งซ้ำ
+                // ให้ใช้ Add to Home Screen ของ Safari แทน
+                return false;
+            }
+
+            if (el.requestFullscreen) {
+                await el.requestFullscreen({ navigationUI: 'hide' });
+                return true;
+            }
+
+            if (el.webkitRequestFullscreen) {
+                el.webkitRequestFullscreen();
+                return true;
+            }
+
+            if (el.msRequestFullscreen) {
+                el.msRequestFullscreen();
+                return true;
+            }
+        } catch (err) {
+            // บาง browser ไม่รับ options ให้ลองแบบมาตรฐานอีกครั้ง
+            try {
+                if (el.requestFullscreen) {
+                    await el.requestFullscreen();
+                    return true;
+                }
+            } catch (_) {}
+        }
+        return false;
+    }
+
+    function exitFullscreen(){
+        try {
+            if (doc.exitFullscreen) {
+                return doc.exitFullscreen();
+            }
+            if (doc.webkitExitFullscreen) {
+                doc.webkitExitFullscreen();
+                return;
+            }
+            if (doc.msExitFullscreen) {
+                doc.msExitFullscreen();
+            }
+        } catch (_) {}
+    }
+
+    window.toggleFullscreen = async function(){
+        if (isFullscreen()) {
+            exitFullscreen();
+        } else {
+            await enterFullscreen();
+        }
+        setTimeout(updateFullscreenButton, 100);
+    };
+
+    // ปรับสถานะปุ่มหลังเข้า/ออกเต็มจอจริง
+    ['fullscreenchange','webkitfullscreenchange','MSFullscreenChange']
+        .forEach(eventName => doc.addEventListener(eventName, updateFullscreenButton));
+
+    // ตรวจสถานะเมื่อโหลดหน้า
     updateFullscreenButton();
-}
 
-function updateFullscreenButton(){
-    const btn=document.getElementById("fullscreenBtn");
-    if(!btn) return;
-    const active=document.fullscreenElement || document.webkitFullscreenElement;
-    btn.textContent=active ? "⛶ ออกจากเต็มจอ" : "⛶ เต็มจอ";
-}
-
-document.addEventListener("fullscreenchange",updateFullscreenButton);
-document.addEventListener("webkitfullscreenchange",updateFullscreenButton);
+    // เก็บข้อมูลอุปกรณ์ไว้ให้โค้ดส่วนอื่นใช้ได้ โดยไม่เปลี่ยนพฤติกรรมเดิม
+    window.deviceInfo = {
+        isIOS,
+        isAndroid,
+        isMac,
+        isPC,
+        fullscreenMethod: isIOS
+            ? (el.webkitRequestFullscreen ? 'webkit-iOS' : 'home-screen')
+            : (el.requestFullscreen ? 'standard' : (el.webkitRequestFullscreen ? 'webkit' : 'unsupported'))
+    };
+})();
 </script>
 
 
