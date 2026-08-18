@@ -1107,6 +1107,7 @@
     const firebaseAuth = firebase.auth();
     const firebaseDB = firebase.database();
     const playersRef = firebaseDB.ref('players');
+    const signsRef = firebaseDB.ref('signs');
 
     let myPlayerId = null;
     let firebaseReady = false;
@@ -1382,6 +1383,72 @@
       renderSignText(signData);
     }
 
+    // ============================================================
+    // FIREBASE SHARED CHECK-IN SIGNS
+    // เครื่องหนึ่งเช็คอิน -> Firebase /signs -> ทุกเครื่องเห็นทันที
+    // ============================================================
+    function applyFirebaseSignData(index, data) {
+      const sign = signs[index];
+      if (!sign) return;
+
+      sign.ownerId = data && data.ownerId ? String(data.ownerId) : null;
+      sign.ownerName = data && data.ownerName ? String(data.ownerName) : '';
+      sign.message = data && data.message ? String(data.message) : '';
+      renderSignText(sign);
+    }
+
+    function startSharedSignsListener() {
+      signsRef.on('value', snapshot => {
+        const data = snapshot.val() || {};
+        let myCheckedSign = null;
+
+        signs.forEach((sign, index) => {
+          const remoteData = data[String(index)] || null;
+          applyFirebaseSignData(index, remoteData);
+          if (remoteData && myPlayerId && String(remoteData.ownerId) === String(myPlayerId)) {
+            myCheckedSign = index;
+          }
+        });
+
+        playerCheckedInSignIndex = myCheckedSign;
+
+        if (myCheckedSign !== null) {
+          checkinStatusText.innerText = `เช็คอินที่ ป้าย #${myCheckedSign + 1}`;
+          checkinStatusText.style.color = '#4ea8de';
+        } else {
+          checkinStatusText.innerText = 'ยังไม่เช็คอิน';
+          checkinStatusText.style.color = '#ff85a1';
+        }
+      }, error => {
+        console.error('Firebase signs read error:', error);
+        checkinStatusText.innerText = 'อ่านข้อมูลป้ายไม่ได้';
+        checkinStatusText.style.color = '#ff75a0';
+      });
+    }
+
+    async function saveCheckinToFirebase(sign, message) {
+      if (!firebaseReady || !myPlayerId) {
+        alert('กำลังเชื่อมต่อ Firebase กรุณารอสักครู่แล้วลองใหม่');
+        return false;
+      }
+
+      const payload = {
+        ownerId: myPlayerId,
+        ownerName: (currentPlayerName || 'ผู้เล่น').slice(0, 14),
+        message: message.trim(),
+        updatedAt: firebase.database.ServerValue.TIMESTAMP
+      };
+
+      try {
+        await signsRef.child(String(sign.index)).set(payload);
+        return true;
+      } catch (error) {
+        console.error('Firebase check-in write error:', error);
+        alert('ส่งข้อความขึ้น Firebase ไม่สำเร็จ\n' + error.message);
+        return false;
+      }
+    }
+
     function renderSignText(sign) {
       const ctx = sign.ctx;
       ctx.clearRect(0, 0, 2200, 1400);
@@ -1428,6 +1495,9 @@
 
     signPositions.forEach((pos, idx) => createSignBoard(pos, idx));
 
+    // เริ่มฟังข้อมูลป้ายหลังจากสร้างป้ายครบแล้ว
+    startSharedSignsListener();
+
     const chatInput = document.getElementById('chat-input');
     const btnSend = document.getElementById('btn-send');
     const btnMic = document.getElementById('btn-mic');
@@ -1468,25 +1538,47 @@
     const warpNotice = document.getElementById('warp-notice');
     let nearbySign = null;
 
-    checkinBtn.addEventListener('pointerdown', (e) => {
+    checkinBtn.addEventListener('pointerdown', async (e) => {
       e.preventDefault();
       if (!nearbySign) return;
-      if (nearbySign.ownerId !== null && nearbySign.ownerId !== "my_player_id") {
-        alert(`❌ ป้ายนี้ถูกเช็คอินแล้วโดย "${nearbySign.ownerName}"`); return;
+
+      if (!firebaseReady || !myPlayerId) {
+        alert('กำลังเชื่อมต่อ Firebase กรุณารอสักครู่แล้วลองใหม่');
+        return;
       }
+
+      const isMine = nearbySign.ownerId && String(nearbySign.ownerId) === String(myPlayerId);
+
+      if (nearbySign.ownerId !== null && !isMine) {
+        alert(`❌ ป้ายนี้ถูกเช็คอินแล้วโดย "${nearbySign.ownerName || 'ผู้เล่น'}"`);
+        return;
+      }
+
       if (nearbySign.ownerId === null && playerCheckedInSignIndex !== null) {
-        alert(`⚠️ คุณได้เช็คอินไว้ที่ "ป้าย #${playerCheckedInSignIndex + 1}" แล้ว`); return;
+        alert(`⚠️ คุณได้เช็คอินไว้ที่ "ป้าย #${playerCheckedInSignIndex + 1}" แล้ว`);
+        return;
       }
-      let userText = prompt(`พิมพ์ข้อความบนป้าย #${nearbySign.index + 1}:`, nearbySign.message || "ความรู้สึกของฉัน...");
-      if (userText !== null && userText.trim() !== "") {
-        nearbySign.ownerId = "my_player_id";
-        nearbySign.ownerName = currentPlayerName || "ผู้เล่น";
-        nearbySign.message = userText.trim();
-        playerCheckedInSignIndex = nearbySign.index;
-        renderSignText(nearbySign);
-        checkinStatusText.innerText = `เช็คอินที่ ป้าย #${nearbySign.index + 1}`;
-        alert("✅ เช็คอินสำเร็จ!");
+
+      const currentMsg = nearbySign.message || 'ความรู้สึกของฉัน...';
+      let userText = prompt(`พิมพ์ข้อความบนป้าย #${nearbySign.index + 1}:`, currentMsg);
+
+      if (userText === null || userText.trim() === '') return;
+
+      const trimmedText = userText.trim();
+      const tempCtx = nearbySign.ctx;
+      tempCtx.font = '92px "Segoe UI", sans-serif';
+      const calculatedLines = getWrappedLines(tempCtx, trimmedText, 1960);
+
+      if (calculatedLines.length > 7) {
+        alert(`❌ ข้อความยาวเกินพื้นที่ป้าย (${calculatedLines.length} บรรทัด)\nกรุณาย่อข้อความให้ไม่เกิน 7 บรรทัด`);
+        return;
       }
+
+      const saved = await saveCheckinToFirebase(nearbySign, trimmedText);
+      if (!saved) return;
+
+      // Listener จาก Firebase จะอัปเดตป้ายให้เองทั้งเครื่องเราและเพื่อน
+      alert('✅ ส่งข้อความและเช็คอินขึ้น Firebase สำเร็จ!\nเพื่อนจะเห็นป้ายนี้ทันที');
     });
 
     const joystickBase = document.getElementById('joystick-base');
@@ -1691,7 +1783,8 @@
 
       if (nearbySign) {
         checkinBtn.style.display = 'flex';
-        checkinBtn.innerText = nearbySign.ownerId === "my_player_id" ? `✏️ แก้ไขป้าย #${nearbySign.index + 1}` : (nearbySign.ownerId !== null ? `🔒 ป้าย #${nearbySign.index + 1} (มีเจ้าของ)` : `📝 เช็คอินป้าย #${nearbySign.index + 1}`);
+        const mine = nearbySign.ownerId && myPlayerId && String(nearbySign.ownerId) === String(myPlayerId);
+        checkinBtn.innerText = mine ? `✏️ แก้ไขป้าย #${nearbySign.index + 1}` : (nearbySign.ownerId !== null ? `🔒 ป้าย #${nearbySign.index + 1} (มีเจ้าของ)` : `📝 เช็คอินป้าย #${nearbySign.index + 1}`);
       } else {
         checkinBtn.style.display = 'none';
       }
