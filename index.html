@@ -1865,28 +1865,60 @@ html, body, canvas {
       joystickKnob.style.transform = `translate(calc(-50% + ${deltaX}px), calc(-50% + ${deltaY}px))`;
       joyInputX = deltaX / 25; joyInputY = deltaY / 25;
     }
-    function resetJoystick() { joystickActive = false; joyInputX = 0; joyInputY = 0; joystickKnob.style.transform = `translate(-50%, -50%)`; }
+    // MULTI-TOUCH CONTROL: joystick + camera simultaneously
+    let joystickPointerId = null;
+    let cameraPointerId = null;
+    let isDraggingCam = false;
+    let prevCamX = 0, prevCamY = 0;
+    let cameraYaw = 0, cameraPitch = 0.35;
 
-    // เมาส์/เดสก์ท็อปใช้ Pointer Events; มือถือใช้ Touch Events ด้านล่าง
-    joystickBase.addEventListener('pointerdown', (e) => {
-      if (e.pointerType === 'touch') return;
-      e.preventDefault();
-      joystickActive = true;
-      joystickBase.setPointerCapture(e.pointerId);
-      handleJoystickMove(e.clientX, e.clientY);
-    });
-    joystickBase.addEventListener('pointermove', (e) => {
-      if (e.pointerType === 'touch') return;
-      if (joystickActive) handleJoystickMove(e.clientX, e.clientY);
-    });
-    joystickBase.addEventListener('pointerup', (e) => {
-      if (e.pointerType === 'touch') return;
-      resetJoystick();
-    });
-    joystickBase.addEventListener('pointercancel', (e) => {
-      if (e.pointerType === 'touch') return;
-      resetJoystick();
-    });
+    function stopCameraDrag(){ isDraggingCam=false; cameraPointerId=null; }
+    function resetJoystick(){ joystickActive=false; joystickPointerId=null; joyInputX=0; joyInputY=0; joystickKnob.style.transform='translate(-50%, -50%)'; }
+
+    joystickBase.addEventListener('pointerdown',e=>{
+      if(e.pointerType==='touch') return;
+      if(joystickPointerId!==null)return;
+      e.preventDefault(); e.stopPropagation();
+      joystickPointerId=e.pointerId; joystickActive=true;
+      handleJoystickMove(e.clientX,e.clientY);
+      try{joystickBase.setPointerCapture(e.pointerId);}catch(_){}
+    },{passive:false});
+    joystickBase.addEventListener('pointermove',e=>{
+      if(e.pointerType==='touch') return;
+      if(e.pointerId!==joystickPointerId)return; e.preventDefault();
+      handleJoystickMove(e.clientX,e.clientY);
+    },{passive:false});
+    joystickBase.addEventListener('pointerup',e=>{if(e.pointerId===joystickPointerId)resetJoystick();},{passive:true});
+    joystickBase.addEventListener('pointercancel',e=>{if(e.pointerId===joystickPointerId)resetJoystick();},{passive:true});
+
+    window.addEventListener('pointerdown',e=>{
+      if(e.pointerType==='touch') return;
+      if(e.pointerId===joystickPointerId)return;
+      if(e.target?.closest?.('#ui-layer'))return;
+      if(e.pointerType==='mouse'&&e.button!==0)return;
+      if(e.clientX<window.innerWidth/2||cameraPointerId!==null)return;
+      cameraPointerId=e.pointerId; isDraggingCam=true;
+      prevCamX=e.clientX; prevCamY=e.clientY; e.preventDefault();
+    },{passive:false});
+    window.addEventListener('pointermove',e=>{
+      if(!isDraggingCam||e.pointerId!==cameraPointerId)return; e.preventDefault();
+      const dx=e.clientX-prevCamX,dy=e.clientY-prevCamY;
+      if(Math.abs(dx)>120||Math.abs(dy)>120){prevCamX=e.clientX;prevCamY=e.clientY;return;}
+      cameraYaw-=dx*0.006;
+      cameraPitch=Math.max(-Math.PI/2+0.01,Math.min(Math.PI/2-0.01,cameraPitch+dy*0.005));
+      prevCamX=e.clientX;prevCamY=e.clientY;
+    },{passive:false});
+    function releasePointer(e){
+      if(e.pointerId===joystickPointerId)resetJoystick();
+      if(e.pointerId===cameraPointerId)stopCameraDrag();
+    }
+    window.addEventListener('pointerup',releasePointer,{passive:true});
+    window.addEventListener('pointercancel',releasePointer,{passive:true});
+
+    document.documentElement.style.touchAction='none';
+    document.body.style.touchAction='none';
+    const gameCanvas=document.querySelector('canvas');
+    if(gameCanvas){gameCanvas.style.touchAction='none';gameCanvas.style.userSelect='none';gameCanvas.style.webkitUserSelect='none';gameCanvas.style.webkitTouchCallout='none';}
 
     let velocityY = 0, gravity = 0.018, isGrounded = true;
     const keys = { w: false, a: false, s: false, d: false };
@@ -1904,92 +1936,6 @@ html, body, canvas {
       if (['KeyA', 'ArrowLeft'].includes(e.code)) keys.a = false;
       if (['KeyD', 'ArrowRight'].includes(e.code)) keys.d = false;
     });
-
-    // =========================
-    // CAMERA TOUCH CONTROL — MULTI-TOUCH FRIENDLY
-    // 1 นิ้วขวา = หมุนกล้อง
-    // 1 นิ้วซ้ายที่จอย = เดิน
-    // สามารถทำ 2 อย่างพร้อมกันได้: เดิน + หมุนกล้อง
-    // นิ้วที่ 2 จะไม่แย่ง pointer ของนิ้วแรก
-    // =========================
-    let cameraYaw = 0, cameraPitch = 0.35;
-    let isDraggingCam = false;
-    let cameraPointerId = null;
-    let prevCamX = 0, prevCamY = 0;
-
-    // pointer ของจอยและกล้องถูกแยกกันโดย pointerId
-    // ทำให้ใช้นิ้วหนึ่งเดิน และอีกนิ้วหมุนกล้องพร้อมกันได้
-    function stopCameraDrag() {
-      isDraggingCam = false;
-      cameraPointerId = null;
-    }
-
-    window.addEventListener('pointerdown', e => {
-      // มือถือใช้ระบบ Touch Events แยกต่างหาก เพื่อรองรับ 2 นิ้วจริง
-      if (e.pointerType === 'touch') return;
-
-      // UI / จอย / ปุ่มต่าง ๆ ไม่ใช่พื้นที่หมุนกล้อง
-      if (e.target.closest('#ui-layer')) return;
-
-      if (e.pointerType === 'mouse' && e.button !== 0) return;
-
-      // ถ้ามีกล้องใช้งานอยู่แล้ว ไม่รับนิ้ว/เมาส์ตัวที่สองเป็นกล้อง
-      if (cameraPointerId !== null) return;
-
-      // หมุนกล้องเฉพาะฝั่งขวา
-      if (e.clientX >= window.innerWidth / 2) {
-        cameraPointerId = e.pointerId;
-        isDraggingCam = true;
-        prevCamX = e.clientX;
-        prevCamY = e.clientY;
-        e.preventDefault();
-
-        // ขอ pointer capture เฉพาะกรณีที่ target รองรับ
-        // ไม่แย่ง pointer ของ joystick
-        try {
-          if (e.target && e.target.setPointerCapture) {
-            e.target.setPointerCapture(e.pointerId);
-          }
-        } catch (_) {}
-      }
-    }, { passive: false });
-
-    window.addEventListener('pointermove', e => {
-      if (!isDraggingCam || e.pointerId !== cameraPointerId) return;
-
-      e.preventDefault();
-
-      const dx = e.clientX - prevCamX;
-      const dy = e.clientY - prevCamY;
-
-      // กัน event กระโดดผิดปกติ แต่ไม่ล็อก multitouch
-      if (Math.abs(dx) > 120 || Math.abs(dy) > 120) {
-        prevCamX = e.clientX;
-        prevCamY = e.clientY;
-        return;
-      }
-
-      cameraYaw -= dx * 0.006;
-      cameraPitch = Math.max(
-        -Math.PI / 2 + 0.01,
-        Math.min(
-          Math.PI / 2 - 0.01,
-          cameraPitch + dy * 0.005
-        )
-      );
-
-      prevCamX = e.clientX;
-      prevCamY = e.clientY;
-    }, { passive: false });
-
-    function releaseCameraPointer(e) {
-      if (e.pointerId === cameraPointerId) {
-        stopCameraDrag();
-      }
-    }
-
-    window.addEventListener('pointerup', releaseCameraPointer, { passive: true });
-    window.addEventListener('pointercancel', releaseCameraPointer, { passive: true });
 
     // =========================================================
     // TRUE TWO-FINGER TOUCH SYSTEM
@@ -2105,15 +2051,15 @@ html, body, canvas {
     // สำคัญมากสำหรับมือถือ:
     // ปิด browser pinch/scroll gesture บนพื้นที่เกม แต่ยังรองรับ
     // pointer ของหลาย ๆ นิ้วพร้อมกันได้ตามปกติ
-    const gameCanvas = document.querySelector('canvas');
-    if (gameCanvas) {
-      gameCanvas.style.touchAction = 'none';
-      gameCanvas.style.userSelect = 'none';
-      gameCanvas.style.webkitUserSelect = 'none';
-      gameCanvas.style.webkitTouchCallout = 'none';
-      gameCanvas.addEventListener('gesturestart', e => e.preventDefault(), { passive: false });
-      gameCanvas.addEventListener('gesturechange', e => e.preventDefault(), { passive: false });
-      gameCanvas.addEventListener('gestureend', e => e.preventDefault(), { passive: false });
+    const touchGameCanvas = document.querySelector('canvas');
+    if (touchGameCanvas) {
+      touchGameCanvas.style.touchAction = 'none';
+      touchGameCanvas.style.userSelect = 'none';
+      touchGameCanvas.style.webkitUserSelect = 'none';
+      touchGameCanvas.style.webkitTouchCallout = 'none';
+      touchGameCanvas.addEventListener('gesturestart', e => e.preventDefault(), { passive: false });
+      touchGameCanvas.addEventListener('gesturechange', e => e.preventDefault(), { passive: false });
+      touchGameCanvas.addEventListener('gestureend', e => e.preventDefault(), { passive: false });
     }
 
     // ให้หน้าเกมรับ multitouch โดยไม่เปลี่ยนเป็น pinch/scroll ของ browser
