@@ -2057,5 +2057,79 @@
       renderer.setSize(window.innerWidth, window.innerHeight);
     });
   </script>
+
+<!-- MOBILE FULLSCREEN -->
+<button id="fullscreenBtn" type="button" onclick="toggleFullscreen()">⛶ เต็มจอ</button>
+
+<style>
+#fullscreenBtn{
+    position:fixed;
+    top:12px;
+    right:12px;
+    z-index:999999;
+    padding:9px 13px;
+    border:1px solid rgba(255,255,255,.25);
+    border-radius:10px;
+    background:rgba(0,0,0,.72);
+    color:#fff;
+    font-size:14px;
+    font-weight:700;
+    cursor:pointer;
+    backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);
+}
+#fullscreenBtn:active{transform:scale(.95)}
+html:fullscreen,
+html:-webkit-full-screen,
+body:fullscreen,
+body:-webkit-full-screen{
+    width:100%;
+    height:100%;
+}
+@media (max-width:768px){
+    #fullscreenBtn{
+        top:8px;
+        right:8px;
+        padding:8px 11px;
+        font-size:13px;
+    }
+}
+</style>
+
+<script>
+function toggleFullscreen(){
+    const doc=document;
+    const el=document.documentElement;
+
+    if(!doc.fullscreenElement && !doc.webkitFullscreenElement){
+        if(el.requestFullscreen){
+            el.requestFullscreen().catch(()=>{});
+        }else if(el.webkitRequestFullscreen){
+            el.webkitRequestFullscreen();
+        }else{
+            // iOS Safari ไม่รองรับ Fullscreen API บางกรณี
+            alert("เบราว์เซอร์นี้ไม่รองรับโหมดเต็มจอ ให้กดเมนู Share/••• แล้วเลือก 'เพิ่มไปยังหน้าจอโฮม' เพื่อเปิดเกมแบบแอป");
+        }
+    }else{
+        if(doc.exitFullscreen){
+            doc.exitFullscreen().catch(()=>{});
+        }else if(doc.webkitExitFullscreen){
+            doc.webkitExitFullscreen();
+        }
+    }
+    updateFullscreenButton();
+}
+
+function updateFullscreenButton(){
+    const btn=document.getElementById("fullscreenBtn");
+    if(!btn) return;
+    const active=document.fullscreenElement || document.webkitFullscreenElement;
+    btn.textContent=active ? "⛶ ออกจากเต็มจอ" : "⛶ เต็มจอ";
+}
+
+document.addEventListener("fullscreenchange",updateFullscreenButton);
+document.addEventListener("webkitfullscreenchange",updateFullscreenButton);
+</script>
+
 </body>
 </html>
