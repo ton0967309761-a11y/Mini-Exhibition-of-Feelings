@@ -1867,10 +1867,26 @@ html, body, canvas {
     }
     function resetJoystick() { joystickActive = false; joyInputX = 0; joyInputY = 0; joystickKnob.style.transform = `translate(-50%, -50%)`; }
 
-    joystickBase.addEventListener('pointerdown', (e) => { e.preventDefault(); joystickActive = true; joystickBase.setPointerCapture(e.pointerId); handleJoystickMove(e.clientX, e.clientY); });
-    joystickBase.addEventListener('pointermove', (e) => { if (joystickActive) handleJoystickMove(e.clientX, e.clientY); });
-    joystickBase.addEventListener('pointerup', resetJoystick);
-    joystickBase.addEventListener('pointercancel', resetJoystick);
+    // เมาส์/เดสก์ท็อปใช้ Pointer Events; มือถือใช้ Touch Events ด้านล่าง
+    joystickBase.addEventListener('pointerdown', (e) => {
+      if (e.pointerType === 'touch') return;
+      e.preventDefault();
+      joystickActive = true;
+      joystickBase.setPointerCapture(e.pointerId);
+      handleJoystickMove(e.clientX, e.clientY);
+    });
+    joystickBase.addEventListener('pointermove', (e) => {
+      if (e.pointerType === 'touch') return;
+      if (joystickActive) handleJoystickMove(e.clientX, e.clientY);
+    });
+    joystickBase.addEventListener('pointerup', (e) => {
+      if (e.pointerType === 'touch') return;
+      resetJoystick();
+    });
+    joystickBase.addEventListener('pointercancel', (e) => {
+      if (e.pointerType === 'touch') return;
+      resetJoystick();
+    });
 
     let velocityY = 0, gravity = 0.018, isGrounded = true;
     const keys = { w: false, a: false, s: false, d: false };
@@ -1909,6 +1925,9 @@ html, body, canvas {
     }
 
     window.addEventListener('pointerdown', e => {
+      // มือถือใช้ระบบ Touch Events แยกต่างหาก เพื่อรองรับ 2 นิ้วจริง
+      if (e.pointerType === 'touch') return;
+
       // UI / จอย / ปุ่มต่าง ๆ ไม่ใช่พื้นที่หมุนกล้อง
       if (e.target.closest('#ui-layer')) return;
 
@@ -1971,6 +1990,117 @@ html, body, canvas {
 
     window.addEventListener('pointerup', releaseCameraPointer, { passive: true });
     window.addEventListener('pointercancel', releaseCameraPointer, { passive: true });
+
+    // =========================================================
+    // TRUE TWO-FINGER TOUCH SYSTEM
+    // มือถือ: นิ้วซ้าย = จอย / นิ้วขวา = กล้อง พร้อมกันได้
+    // ใช้ Touch.identifier แยกนิ้วโดยตรง ไม่พึ่ง pointer capture
+    // =========================================================
+    let joystickTouchId = null;
+    let cameraTouchId = null;
+
+    function findTouchById(list, id) {
+      for (let i = 0; i < list.length; i++) {
+        if (list[i].identifier === id) return list[i];
+      }
+      return null;
+    }
+
+    function isJoystickTarget(target) {
+      return !!(target && (target === joystickBase || target.closest('#joystick-base')));
+    }
+
+    function isBlockedUITarget(target) {
+      if (!target) return false;
+      if (isJoystickTarget(target)) return true;
+      if (target.closest('#ui-layer')) return true;
+      return false;
+    }
+
+    document.addEventListener('touchstart', (e) => {
+      if (!e.touches || !e.touches.length) return;
+
+      let gameTouch = false;
+      for (const t of e.changedTouches) {
+        if (isJoystickTarget(t.target) ||
+            (!isBlockedUITarget(t.target) && t.clientX >= window.innerWidth / 2)) {
+          gameTouch = true;
+          break;
+        }
+      }
+      if (gameTouch) e.preventDefault();
+
+      for (const t of e.changedTouches) {
+        // ถ้าแตะจอย ให้จองนิ้วนี้ไว้กับจอย
+        if (joystickTouchId === null && isJoystickTarget(t.target)) {
+          joystickTouchId = t.identifier;
+          joystickActive = true;
+          handleJoystickMove(t.clientX, t.clientY);
+          continue;
+        }
+
+        // นิ้วอื่นที่แตะฝั่งขวาของจอ = กล้อง
+        if (
+          cameraTouchId === null &&
+          !isBlockedUITarget(t.target) &&
+          t.clientX >= window.innerWidth / 2
+        ) {
+          cameraTouchId = t.identifier;
+          isDraggingCam = true;
+          prevCamX = t.clientX;
+          prevCamY = t.clientY;
+        }
+      }
+    }, { passive: false });
+
+    document.addEventListener('touchmove', (e) => {
+      if (!e.touches || !e.touches.length) return;
+      if (joystickTouchId === null && cameraTouchId === null) return;
+      e.preventDefault();
+
+      // อัปเดตจอยจากนิ้วของมันเอง
+      if (joystickTouchId !== null) {
+        const jt = findTouchById(e.touches, joystickTouchId);
+        if (jt) handleJoystickMove(jt.clientX, jt.clientY);
+      }
+
+      // อัปเดตกล้องจากนิ้วของมันเอง
+      if (cameraTouchId !== null) {
+        const ct = findTouchById(e.touches, cameraTouchId);
+        if (ct) {
+          const dx = ct.clientX - prevCamX;
+          const dy = ct.clientY - prevCamY;
+
+          if (Math.abs(dx) <= 120 && Math.abs(dy) <= 120) {
+            cameraYaw -= dx * 0.006;
+            cameraPitch = Math.max(
+              -Math.PI / 2 + 0.01,
+              Math.min(Math.PI / 2 - 0.01, cameraPitch + dy * 0.005)
+            );
+          }
+
+          prevCamX = ct.clientX;
+          prevCamY = ct.clientY;
+        }
+      }
+    }, { passive: false });
+
+    function releaseTouchIds(e) {
+      if (!e.changedTouches) return;
+      for (const t of e.changedTouches) {
+        if (t.identifier === joystickTouchId) {
+          joystickTouchId = null;
+          resetJoystick();
+        }
+        if (t.identifier === cameraTouchId) {
+          cameraTouchId = null;
+          stopCameraDrag();
+        }
+      }
+    }
+
+    document.addEventListener('touchend', releaseTouchIds, { passive: false });
+    document.addEventListener('touchcancel', releaseTouchIds, { passive: false });
 
     // สำคัญมากสำหรับมือถือ:
     // ปิด browser pinch/scroll gesture บนพื้นที่เกม แต่ยังรองรับ
