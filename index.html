@@ -92,7 +92,7 @@ html, body { touch-action: none; overscroll-behavior: none; }
 
     #joystick-base {
       position: absolute; bottom: 15px; left: 15px;
-      width: 110px; height: 110px;
+      width: 80px; height: 80px;
       background: rgba(78, 168, 222, 0.15);
       border: 1.5px solid rgba(255, 117, 160, 0.5);
       border-radius: 50%;
@@ -100,7 +100,7 @@ html, body { touch-action: none; overscroll-behavior: none; }
     }
     #joystick-knob {
       position: absolute; top: 50%; left: 50%;
-      width: 44px; height: 44px;
+      width: 30px; height: 30px;
       background: rgba(255, 117, 160, 0.85);
       border: 1.5px solid #90e0ef;
       border-radius: 50%;
@@ -109,21 +109,21 @@ html, body { touch-action: none; overscroll-behavior: none; }
     }
 
     .elevator-prompt {
-      position: absolute; bottom: 125px; right: 18px;
-      width: 58px; height: 58px;
+      position: absolute; bottom: 100px; right: 15px;
+      width: 42px; height: 42px;
       border-radius: 50%;
       background: rgba(76, 201, 240, 0.4);
       border: 1.5px solid #4cc9f0;
-      color: #fff; font-size: 23px;
+      color: #fff; font-size: 16px;
       display: none; align-items: center; justify-content: center;
       pointer-events: auto; cursor: pointer; z-index: 20;
     }
     .elevator-prompt.sky { background: rgba(247, 37, 133, 0.4); border-color: #f72585; }
 
     .btn-jump { 
-      position: absolute; bottom: 52px; right: 18px; width: 58px; height: 58px; 
+      position: absolute; bottom: 50px; right: 15px; width: 42px; height: 42px; 
       border-radius: 50%; background: rgba(78, 168, 222, 0.4); 
-      border: 1.5px solid #4ea8de; color: #fff; font-size: 23px;
+      border: 1.5px solid #4ea8de; color: #fff; font-size: 16px;
       display: flex; align-items: center; justify-content: center;
       pointer-events: auto; cursor: pointer; z-index: 20;
     }
@@ -1861,9 +1861,9 @@ html, body, canvas {
       let deltaX = clientX - (rect.left + rect.width / 2);
       let deltaY = clientY - (rect.top + rect.height / 2);
       let dist = Math.hypot(deltaX, deltaY);
-      if (dist > 34) { deltaX = (deltaX / dist) * 34; deltaY = (deltaY / dist) * 34; }
+      if (dist > 25) { deltaX = (deltaX / dist) * 25; deltaY = (deltaY / dist) * 25; }
       joystickKnob.style.transform = `translate(calc(-50% + ${deltaX}px), calc(-50% + ${deltaY}px))`;
-      joyInputX = deltaX / 34; joyInputY = deltaY / 34;
+      joyInputX = deltaX / 25; joyInputY = deltaY / 25;
     }
     // MULTI-TOUCH CONTROL: joystick + camera simultaneously
     let joystickPointerId = null;
@@ -2290,15 +2290,6 @@ body:-webkit-full-screen{
         padding:8px 11px;
         font-size:13px;
     }
-}
-
-
-/* Larger touch controls */
-@media (max-width:768px){
-  #joystick-base{width:120px;height:120px;bottom:18px;left:18px;}
-  #joystick-knob{width:48px;height:48px;}
-  .btn-jump{width:64px;height:64px;right:18px;bottom:54px;font-size:25px;}
-  .elevator-prompt{width:64px;height:64px;right:18px;bottom:132px;font-size:25px;}
 }
 </style>
 
