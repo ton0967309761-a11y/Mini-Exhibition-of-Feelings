@@ -1890,108 +1890,61 @@ html, body, canvas {
     });
 
     // =========================
-    // CAMERA TOUCH CONTROL — HARD MULTI-TOUCH LOCK
-    // สำคัญ: ใช้ทั้ง Pointer Events + Touch Events
-    // นิ้วเดียวด้านขวา = หมุนกล้อง
-    // ถ้ามี 2 นิ้วเมื่อใด = ยกเลิกกล้องทันที
-    // ต้องปล่อยนิ้วทั้งหมดก่อนจึงจะเริ่มกล้องใหม่ได้
+    // CAMERA TOUCH CONTROL — MULTI-TOUCH FRIENDLY
+    // 1 นิ้วขวา = หมุนกล้อง
+    // 1 นิ้วซ้ายที่จอย = เดิน
+    // สามารถทำ 2 อย่างพร้อมกันได้: เดิน + หมุนกล้อง
+    // นิ้วที่ 2 จะไม่แย่ง pointer ของนิ้วแรก
     // =========================
     let cameraYaw = 0, cameraPitch = 0.35;
     let isDraggingCam = false;
     let cameraPointerId = null;
     let prevCamX = 0, prevCamY = 0;
-    let touchCount = 0;
-    let hardMultiTouchLock = false;
-    let activeCameraTouch = false;
 
-    function stopCameraDrag(lock = false) {
+    // pointer ของจอยและกล้องถูกแยกกันโดย pointerId
+    // ทำให้ใช้นิ้วหนึ่งเดิน และอีกนิ้วหมุนกล้องพร้อมกันได้
+    function stopCameraDrag() {
       isDraggingCam = false;
       cameraPointerId = null;
-      activeCameraTouch = false;
-      if (lock) hardMultiTouchLock = true;
     }
 
-    // ---- Native touch guard ----
-    // กัน pinch/zoom/scroll และนับจำนวนนิ้วจาก touches จริง
-    function updateRealTouchCount(e) {
-      touchCount = e.touches ? e.touches.length : 0;
-      if (touchCount >= 2) {
-        stopCameraDrag(true);
-      }
-      if (touchCount === 0) {
-        hardMultiTouchLock = false;
-      }
-    }
-
-    window.addEventListener('touchstart', (e) => {
-      updateRealTouchCount(e);
-      // เกมเป็น full-screen จึงไม่ต้องให้ browser ทำ gesture ของตัวเอง
-      if (e.touches.length >= 2) e.preventDefault();
-    }, { passive: false });
-
-    window.addEventListener('touchmove', (e) => {
-      updateRealTouchCount(e);
-      if (e.touches.length >= 2 || hardMultiTouchLock) {
-        e.preventDefault();
-      }
-    }, { passive: false });
-
-    window.addEventListener('touchend', (e) => {
-      updateRealTouchCount(e);
-    }, { passive: false });
-
-    window.addEventListener('touchcancel', (e) => {
-      updateRealTouchCount(e);
-    }, { passive: false });
-
-    // ---- Pointer Events camera ----
     window.addEventListener('pointerdown', e => {
-      if (e.pointerType === 'touch') {
-        // ถ้า touch event บอกว่ามีหลายคนแล้ว ห้ามเริ่มกล้อง
-        if (touchCount >= 2 || hardMultiTouchLock) {
-          stopCameraDrag(true);
-          return;
-        }
-      }
-
-      // ปุ่ม / จอย / UI ไม่ใช่พื้นที่หมุนกล้อง
+      // UI / จอย / ปุ่มต่าง ๆ ไม่ใช่พื้นที่หมุนกล้อง
       if (e.target.closest('#ui-layer')) return;
+
       if (e.pointerType === 'mouse' && e.button !== 0) return;
+
+      // ถ้ามีกล้องใช้งานอยู่แล้ว ไม่รับนิ้ว/เมาส์ตัวที่สองเป็นกล้อง
       if (cameraPointerId !== null) return;
 
-      // ต้องแตะฝั่งขวาเท่านั้น
+      // หมุนกล้องเฉพาะฝั่งขวา
       if (e.clientX >= window.innerWidth / 2) {
         cameraPointerId = e.pointerId;
         isDraggingCam = true;
-        activeCameraTouch = (e.pointerType === 'touch');
         prevCamX = e.clientX;
         prevCamY = e.clientY;
         e.preventDefault();
+
+        // ขอ pointer capture เฉพาะกรณีที่ target รองรับ
+        // ไม่แย่ง pointer ของ joystick
+        try {
+          if (e.target && e.target.setPointerCapture) {
+            e.target.setPointerCapture(e.pointerId);
+          }
+        } catch (_) {}
       }
     }, { passive: false });
 
     window.addEventListener('pointermove', e => {
-      // HARD STOP: touch มากกว่า 1 นิ้ว = ไม่คำนวณกล้องเด็ดขาด
-      if (e.pointerType === 'touch' && (touchCount >= 2 || hardMultiTouchLock)) {
-        stopCameraDrag(true);
-        return;
-      }
-
       if (!isDraggingCam || e.pointerId !== cameraPointerId) return;
-
-      // ถ้าเป็น touch ต้องยังมีนิ้วเดียวจริง ๆ เท่านั้น
-      if (e.pointerType === 'touch' && touchCount !== 1) {
-        stopCameraDrag(true);
-        return;
-      }
 
       e.preventDefault();
 
       const dx = e.clientX - prevCamX;
       const dy = e.clientY - prevCamY;
 
-      // จำกัดการกระโดดของกล้องจาก event ที่ตำแหน่งเปลี่ยนผิดปกติ
-      if (Math.abs(dx) > 80 || Math.abs(dy) > 80) {
+      // กัน event กระโดดผิดปกติ แต่ไม่ล็อก multitouch
+      if (Math.abs(dx) > 120 || Math.abs(dy) > 120) {
         prevCamX = e.clientX;
         prevCamY = e.clientY;
         return;
@@ -2012,27 +1965,30 @@ html, body, canvas {
 
     function releaseCameraPointer(e) {
       if (e.pointerId === cameraPointerId) {
-        stopCameraDrag(false);
-      }
-
-      if (e.pointerType === 'touch' && touchCount === 0) {
-        hardMultiTouchLock = false;
+        stopCameraDrag();
       }
     }
 
     window.addEventListener('pointerup', releaseCameraPointer, { passive: true });
     window.addEventListener('pointercancel', releaseCameraPointer, { passive: true });
 
-    // กัน gesture ของ browser บน canvas โดยตรง
+    // สำคัญมากสำหรับมือถือ:
+    // ปิด browser pinch/scroll gesture บนพื้นที่เกม แต่ยังรองรับ
+    // pointer ของหลาย ๆ นิ้วพร้อมกันได้ตามปกติ
     const gameCanvas = document.querySelector('canvas');
     if (gameCanvas) {
       gameCanvas.style.touchAction = 'none';
       gameCanvas.style.userSelect = 'none';
       gameCanvas.style.webkitUserSelect = 'none';
+      gameCanvas.style.webkitTouchCallout = 'none';
       gameCanvas.addEventListener('gesturestart', e => e.preventDefault(), { passive: false });
       gameCanvas.addEventListener('gesturechange', e => e.preventDefault(), { passive: false });
       gameCanvas.addEventListener('gestureend', e => e.preventDefault(), { passive: false });
     }
+
+    // ให้หน้าเกมรับ multitouch โดยไม่เปลี่ยนเป็น pinch/scroll ของ browser
+    document.documentElement.style.touchAction = 'none';
+    document.body.style.touchAction = 'none';
 
     document.getElementById('btn-jump').addEventListener('pointerdown', (e) => { e.preventDefault(); jump(); });
     function jump() { if (isGrounded) { velocityY = 0.48; isGrounded = false; } }
