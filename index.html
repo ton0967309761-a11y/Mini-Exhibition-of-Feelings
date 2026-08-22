@@ -5,8 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>3D Bunny - Night Sky & Stylized Grass</title>
   <style>
-html, body { touch-action: none; overscroll-behavior: none; }
-
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; user-select: none; -webkit-user-select: none; }
     body, html { width: 100%; height: 100%; overflow: hidden; background: #050814; touch-action: none; }
 
@@ -92,7 +90,7 @@ html, body { touch-action: none; overscroll-behavior: none; }
 
     #joystick-base {
       position: absolute; bottom: 15px; left: 15px;
-      width: 110px; height: 110px;
+      width: 80px; height: 80px;
       background: rgba(78, 168, 222, 0.15);
       border: 1.5px solid rgba(255, 117, 160, 0.5);
       border-radius: 50%;
@@ -100,7 +98,7 @@ html, body { touch-action: none; overscroll-behavior: none; }
     }
     #joystick-knob {
       position: absolute; top: 50%; left: 50%;
-      width: 44px; height: 44px;
+      width: 30px; height: 30px;
       background: rgba(255, 117, 160, 0.85);
       border: 1.5px solid #90e0ef;
       border-radius: 50%;
@@ -109,21 +107,21 @@ html, body { touch-action: none; overscroll-behavior: none; }
     }
 
     .elevator-prompt {
-      position: absolute; bottom: 125px; right: 18px;
-      width: 58px; height: 58px;
+      position: absolute; bottom: 100px; right: 15px;
+      width: 42px; height: 42px;
       border-radius: 50%;
       background: rgba(76, 201, 240, 0.4);
       border: 1.5px solid #4cc9f0;
-      color: #fff; font-size: 23px;
+      color: #fff; font-size: 16px;
       display: none; align-items: center; justify-content: center;
-      pointer-events: auto; cursor: pointer; z-index: 20;
+      pointer-events: auto; cursor: pointer; z-index: 20; touch-action: manipulation; -webkit-user-select: none; user-select: none;
     }
     .elevator-prompt.sky { background: rgba(247, 37, 133, 0.4); border-color: #f72585; }
 
     .btn-jump { 
-      position: absolute; bottom: 52px; right: 18px; width: 58px; height: 58px; 
+      position: absolute; bottom: 50px; right: 15px; width: 42px; height: 42px; 
       border-radius: 50%; background: rgba(78, 168, 222, 0.4); 
-      border: 1.5px solid #4ea8de; color: #fff; font-size: 23px;
+      border: 1.5px solid #4ea8de; color: #fff; font-size: 16px;
       display: flex; align-items: center; justify-content: center;
       pointer-events: auto; cursor: pointer; z-index: 20;
     }
@@ -201,13 +199,6 @@ img, video {
 }
 </style>
 
-
-<style id="multi-touch-protection">
-html, body, canvas {
-  touch-action: none !important;
-  overscroll-behavior: none !important;
-}
-</style>
 </head>
 <body>
 
@@ -306,12 +297,10 @@ html, body, canvas {
     scene.fog = new THREE.FogExp2(0x060919, 0.0025);
 
     const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-    const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 3));
-    renderer.outputEncoding = THREE.sRGBEncoding;
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2.5));
     renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     document.body.appendChild(renderer.domElement);
 
     const ambientLight = new THREE.AmbientLight(0x7080b0, 0.85);
@@ -320,10 +309,6 @@ html, body, canvas {
     const moonLight = new THREE.DirectionalLight(0xb0c4de, 1.2);
     moonLight.position.set(-60, 120, -60);
     moonLight.castShadow = true;
-    moonLight.shadow.mapSize.width = 2048;
-    moonLight.shadow.mapSize.height = 2048;
-    moonLight.shadow.camera.near = 0.5;
-    moonLight.shadow.camera.far = 500;
     scene.add(moonLight);
 
     // --- [อัปเดต] สร้างดวงจันทร์ให้สมจริงยิ่งขึ้น ---
@@ -1085,7 +1070,6 @@ html, body, canvas {
     const overheadCtx = overheadCanvas.getContext('2d');
     const overheadTexture = new THREE.CanvasTexture(overheadCanvas);
     const overheadSprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: overheadTexture }));
-    overheadSprite.name = 'overheadSprite';
     overheadSprite.position.set(0, 5.2, 0); 
     overheadSprite.scale.set(5.5, 2.75, 1);
     bunnyGroup.add(overheadSprite);
@@ -1507,17 +1491,9 @@ html, body, canvas {
           setMultiplayerStatus('Firebase: อ่านข้อมูลเพื่อนไม่ได้', '#ff75a0');
         });
 
-        // ส่งตำแหน่งถี่พอให้เพื่อนเห็นการเคลื่อนไหวลื่น แต่ไม่ยิงฐานข้อมูลหนักเกินไป
-        setInterval(publishMyPlayer, 120);
+        // ส่งตำแหน่งทุก 100ms
+        setInterval(publishMyPlayer, 100);
         publishMyPlayer();
-
-        // กันตัวละครค้าง หากเครื่องเพื่อนปิด/หลุดโดย Firebase ยังไม่ทันแจ้ง child_removed
-        setInterval(() => {
-          const now = performance.now();
-          [...remotePlayers.entries()].forEach(([id, entry]) => {
-            if (now - entry.lastSeen > 5000) removeRemotePlayer(id);
-          });
-        }, 2000);
         setMultiplayerStatus('ออนไลน์ • เห็นเพื่อนแล้ว', '#4ea8de');
       }).catch(error => {
         console.error('Firebase anonymous auth error:', error);
@@ -1809,48 +1785,141 @@ html, body, canvas {
       await cancelMyCheckin();
     });
 
-    checkinBtn.addEventListener('pointerdown', async (e) => {
+    // =========================================================
+    // MOBILE CHECK-IN FIX
+    // มือถือบาง browser ยิง pointer/touch/click ซ้ำได้
+    // ใช้ lock + pointerup เพื่อให้หนึ่งการแตะ = หนึ่งครั้ง
+    // =========================================================
+    let checkinProcessing = false;
+    let lastCheckinAt = 0;
+
+    async function handleCheckin(e) {
       e.preventDefault();
+      e.stopPropagation();
+
+      const now = Date.now();
+
+      // กันแตะซ้ำ / event ซ้ำ ภายใน 800ms
+      if (checkinProcessing) return;
+      if (now - lastCheckinAt < 800) return;
+
       if (!nearbySign) return;
 
-      if (!firebaseReady || !myPlayerId) {
-        alert('กำลังเชื่อมต่อ Firebase กรุณารอสักครู่แล้วลองใหม่');
-        return;
+      // ล็อกทันที ก่อนเปิด prompt
+      checkinProcessing = true;
+      lastCheckinAt = now;
+
+      // เก็บ reference ของป้ายที่เลือกไว้
+      const targetSign = nearbySign;
+
+      try {
+        if (!firebaseReady || !myPlayerId) {
+          alert('กำลังเชื่อมต่อ Firebase กรุณารอสักครู่แล้วลองใหม่');
+          return;
+        }
+
+        const isMine =
+          targetSign.ownerId &&
+          String(targetSign.ownerId) === String(myPlayerId);
+
+        if (targetSign.ownerId !== null && !isMine) {
+          alert(
+            `❌ ป้ายนี้ถูกเช็คอินแล้วโดย "${targetSign.ownerName || 'ผู้เล่น'}"`
+          );
+          return;
+        }
+
+        if (
+          targetSign.ownerId === null &&
+          playerCheckedInSignIndex !== null
+        ) {
+          alert(
+            `⚠️ คุณได้เช็คอินไว้ที่ "ป้าย #${playerCheckedInSignIndex + 1}" แล้ว`
+          );
+          return;
+        }
+
+        const currentMsg =
+          targetSign.message || 'ความรู้สึกของฉัน...';
+
+        const userText = prompt(
+          `พิมพ์ข้อความบนป้าย #${targetSign.index + 1}:`,
+          currentMsg
+        );
+
+        if (userText === null || userText.trim() === '') {
+          return;
+        }
+
+        const trimmedText = userText.trim();
+
+        const tempCtx = targetSign.ctx;
+        tempCtx.font = '92px "Segoe UI", sans-serif';
+
+        const calculatedLines =
+          getWrappedLines(tempCtx, trimmedText, 1960);
+
+        if (calculatedLines.length > 7) {
+          alert(
+            `❌ ข้อความยาวเกินพื้นที่ป้าย ` +
+            `(${calculatedLines.length} บรรทัด)\n` +
+            `กรุณาย่อข้อความให้ไม่เกิน 7 บรรทัด`
+          );
+          return;
+        }
+
+        // ตรวจอีกครั้งก่อนเขียน Firebase
+        // ป้องกัน listener หรือเครื่องอื่นเปลี่ยนสถานะระหว่าง prompt
+        if (
+          targetSign.ownerId !== null &&
+          String(targetSign.ownerId) !== String(myPlayerId)
+        ) {
+          alert('❌ ป้ายนี้ถูกเช็คอินแล้ว');
+          return;
+        }
+
+        // สำคัญ: เขียน Firebase แค่ครั้งเดียว
+        const saved =
+          await saveCheckinToFirebase(
+            targetSign,
+            trimmedText
+          );
+
+        if (!saved) return;
+
+        alert(
+          '✅ ส่งข้อความและเช็คอินขึ้น Firebase สำเร็จ!\n' +
+          'เพื่อนจะเห็นป้ายนี้ทันที'
+        );
+
+      } finally {
+        // ไม่ปลดล็อกทันที เพราะมือถืออาจส่ง event ต่อเนื่อง
+        setTimeout(() => {
+          checkinProcessing = false;
+        }, 300);
       }
+    }
 
-      const isMine = nearbySign.ownerId && String(nearbySign.ownerId) === String(myPlayerId);
+    // ใช้ pointerup แทน pointerdown
+    checkinBtn.addEventListener(
+      'pointerup',
+      handleCheckin
+    );
 
-      if (nearbySign.ownerId !== null && !isMine) {
-        alert(`❌ ป้ายนี้ถูกเช็คอินแล้วโดย "${nearbySign.ownerName || 'ผู้เล่น'}"`);
-        return;
+    // กัน click ที่ browser สร้างตามหลัง touch/pointerup
+    checkinBtn.addEventListener(
+      'click',
+      (e) => {
+        e.preventDefault();
+        e.stopPropagation();
       }
+    );
 
-      if (nearbySign.ownerId === null && playerCheckedInSignIndex !== null) {
-        alert(`⚠️ คุณได้เช็คอินไว้ที่ "ป้าย #${playerCheckedInSignIndex + 1}" แล้ว`);
-        return;
-      }
-
-      const currentMsg = nearbySign.message || 'ความรู้สึกของฉัน...';
-      let userText = prompt(`พิมพ์ข้อความบนป้าย #${nearbySign.index + 1}:`, currentMsg);
-
-      if (userText === null || userText.trim() === '') return;
-
-      const trimmedText = userText.trim();
-      const tempCtx = nearbySign.ctx;
-      tempCtx.font = '92px "Segoe UI", sans-serif';
-      const calculatedLines = getWrappedLines(tempCtx, trimmedText, 1960);
-
-      if (calculatedLines.length > 7) {
-        alert(`❌ ข้อความยาวเกินพื้นที่ป้าย (${calculatedLines.length} บรรทัด)\nกรุณาย่อข้อความให้ไม่เกิน 7 บรรทัด`);
-        return;
-      }
-
-      const saved = await saveCheckinToFirebase(nearbySign, trimmedText);
-      if (!saved) return;
-
-      // Listener จาก Firebase จะอัปเดตป้ายให้เองทั้งเครื่องเราและเพื่อน
-      alert('✅ ส่งข้อความและเช็คอินขึ้น Firebase สำเร็จ!\nเพื่อนจะเห็นป้ายนี้ทันที');
-    });
+    // กัน long-press menu บนมือถือ
+    checkinBtn.addEventListener(
+      'contextmenu',
+      (e) => e.preventDefault()
+    );
 
     const joystickBase = document.getElementById('joystick-base');
     const joystickKnob = document.getElementById('joystick-knob');
@@ -1861,64 +1930,16 @@ html, body, canvas {
       let deltaX = clientX - (rect.left + rect.width / 2);
       let deltaY = clientY - (rect.top + rect.height / 2);
       let dist = Math.hypot(deltaX, deltaY);
-      if (dist > 34) { deltaX = (deltaX / dist) * 34; deltaY = (deltaY / dist) * 34; }
+      if (dist > 25) { deltaX = (deltaX / dist) * 25; deltaY = (deltaY / dist) * 25; }
       joystickKnob.style.transform = `translate(calc(-50% + ${deltaX}px), calc(-50% + ${deltaY}px))`;
-      joyInputX = deltaX / 34; joyInputY = deltaY / 34;
+      joyInputX = deltaX / 25; joyInputY = deltaY / 25;
     }
-    // MULTI-TOUCH CONTROL: joystick + camera simultaneously
-    let joystickPointerId = null;
-    let cameraPointerId = null;
-    let isDraggingCam = false;
-    let prevCamX = 0, prevCamY = 0;
-    let cameraYaw = 0, cameraPitch = 0.35;
+    function resetJoystick() { joystickActive = false; joyInputX = 0; joyInputY = 0; joystickKnob.style.transform = `translate(-50%, -50%)`; }
 
-    function stopCameraDrag(){ isDraggingCam=false; cameraPointerId=null; }
-    function resetJoystick(){ joystickActive=false; joystickPointerId=null; joyInputX=0; joyInputY=0; joystickKnob.style.transform='translate(-50%, -50%)'; }
-
-    joystickBase.addEventListener('pointerdown',e=>{
-      if(e.pointerType==='touch') return;
-      if(joystickPointerId!==null)return;
-      e.preventDefault(); e.stopPropagation();
-      joystickPointerId=e.pointerId; joystickActive=true;
-      handleJoystickMove(e.clientX,e.clientY);
-      try{joystickBase.setPointerCapture(e.pointerId);}catch(_){}
-    },{passive:false});
-    joystickBase.addEventListener('pointermove',e=>{
-      if(e.pointerType==='touch') return;
-      if(e.pointerId!==joystickPointerId)return; e.preventDefault();
-      handleJoystickMove(e.clientX,e.clientY);
-    },{passive:false});
-    joystickBase.addEventListener('pointerup',e=>{if(e.pointerId===joystickPointerId)resetJoystick();},{passive:true});
-    joystickBase.addEventListener('pointercancel',e=>{if(e.pointerId===joystickPointerId)resetJoystick();},{passive:true});
-
-    window.addEventListener('pointerdown',e=>{
-      if(e.pointerType==='touch') return;
-      if(e.pointerId===joystickPointerId)return;
-      if(e.target?.closest?.('#ui-layer'))return;
-      if(e.pointerType==='mouse'&&e.button!==0)return;
-      if(e.clientX<window.innerWidth/2||cameraPointerId!==null)return;
-      cameraPointerId=e.pointerId; isDraggingCam=true;
-      prevCamX=e.clientX; prevCamY=e.clientY; e.preventDefault();
-    },{passive:false});
-    window.addEventListener('pointermove',e=>{
-      if(!isDraggingCam||e.pointerId!==cameraPointerId)return; e.preventDefault();
-      const dx=e.clientX-prevCamX,dy=e.clientY-prevCamY;
-      if(Math.abs(dx)>120||Math.abs(dy)>120){prevCamX=e.clientX;prevCamY=e.clientY;return;}
-      cameraYaw-=dx*0.006;
-      cameraPitch=Math.max(-Math.PI/2+0.01,Math.min(Math.PI/2-0.01,cameraPitch+dy*0.005));
-      prevCamX=e.clientX;prevCamY=e.clientY;
-    },{passive:false});
-    function releasePointer(e){
-      if(e.pointerId===joystickPointerId)resetJoystick();
-      if(e.pointerId===cameraPointerId)stopCameraDrag();
-    }
-    window.addEventListener('pointerup',releasePointer,{passive:true});
-    window.addEventListener('pointercancel',releasePointer,{passive:true});
-
-    document.documentElement.style.touchAction='none';
-    document.body.style.touchAction='none';
-    const gameCanvas=document.querySelector('canvas');
-    if(gameCanvas){gameCanvas.style.touchAction='none';gameCanvas.style.userSelect='none';gameCanvas.style.webkitUserSelect='none';gameCanvas.style.webkitTouchCallout='none';}
+    joystickBase.addEventListener('pointerdown', (e) => { e.preventDefault(); joystickActive = true; joystickBase.setPointerCapture(e.pointerId); handleJoystickMove(e.clientX, e.clientY); });
+    joystickBase.addEventListener('pointermove', (e) => { if (joystickActive) handleJoystickMove(e.clientX, e.clientY); });
+    joystickBase.addEventListener('pointerup', resetJoystick);
+    joystickBase.addEventListener('pointercancel', resetJoystick);
 
     let velocityY = 0, gravity = 0.018, isGrounded = true;
     const keys = { w: false, a: false, s: false, d: false };
@@ -1937,134 +1958,27 @@ html, body, canvas {
       if (['KeyD', 'ArrowRight'].includes(e.code)) keys.d = false;
     });
 
-    // =========================================================
-    // TRUE TWO-FINGER TOUCH SYSTEM
-    // มือถือ: นิ้วซ้าย = จอย / นิ้วขวา = กล้อง พร้อมกันได้
-    // ใช้ Touch.identifier แยกนิ้วโดยตรง ไม่พึ่ง pointer capture
-    // =========================================================
-    let joystickTouchId = null;
-    let cameraTouchId = null;
-
-    function findTouchById(list, id) {
-      for (let i = 0; i < list.length; i++) {
-        if (list[i].identifier === id) return list[i];
+    let cameraYaw = 0, cameraPitch = 0.35, isDraggingCam = false, prevCamX = 0, prevCamY = 0;
+    
+    window.addEventListener('pointerdown', e => {
+      if (e.target.closest('#ui-layer')) return;
+      if (e.clientX >= window.innerWidth / 2) {
+        isDraggingCam = true; 
+        prevCamX = e.clientX; 
+        prevCamY = e.clientY;
       }
-      return null;
-    }
+    });
 
-    function isJoystickTarget(target) {
-      return !!(target && (target === joystickBase || target.closest('#joystick-base')));
-    }
+    window.addEventListener('pointermove', e => {
+      if (!isDraggingCam) return;
+      cameraYaw -= (e.clientX - prevCamX) * 0.006;
+      cameraPitch = Math.max(-Math.PI / 2 + 0.01, Math.min(Math.PI / 2 - 0.01, cameraPitch + (e.clientY - prevCamY) * 0.005));
+      prevCamX = e.clientX; 
+      prevCamY = e.clientY;
+    });
 
-    function isBlockedUITarget(target) {
-      if (!target) return false;
-      if (isJoystickTarget(target)) return true;
-      if (target.closest('#ui-layer')) return true;
-      return false;
-    }
-
-    document.addEventListener('touchstart', (e) => {
-      if (!e.touches || !e.touches.length) return;
-
-      let gameTouch = false;
-      for (const t of e.changedTouches) {
-        if (isJoystickTarget(t.target) ||
-            (!isBlockedUITarget(t.target) && t.clientX >= window.innerWidth / 2)) {
-          gameTouch = true;
-          break;
-        }
-      }
-      if (gameTouch) e.preventDefault();
-
-      for (const t of e.changedTouches) {
-        // ถ้าแตะจอย ให้จองนิ้วนี้ไว้กับจอย
-        if (joystickTouchId === null && isJoystickTarget(t.target)) {
-          joystickTouchId = t.identifier;
-          joystickActive = true;
-          handleJoystickMove(t.clientX, t.clientY);
-          continue;
-        }
-
-        // นิ้วอื่นที่แตะฝั่งขวาของจอ = กล้อง
-        if (
-          cameraTouchId === null &&
-          !isBlockedUITarget(t.target) &&
-          t.clientX >= window.innerWidth / 2
-        ) {
-          cameraTouchId = t.identifier;
-          isDraggingCam = true;
-          prevCamX = t.clientX;
-          prevCamY = t.clientY;
-        }
-      }
-    }, { passive: false });
-
-    document.addEventListener('touchmove', (e) => {
-      if (!e.touches || !e.touches.length) return;
-      if (joystickTouchId === null && cameraTouchId === null) return;
-      e.preventDefault();
-
-      // อัปเดตจอยจากนิ้วของมันเอง
-      if (joystickTouchId !== null) {
-        const jt = findTouchById(e.touches, joystickTouchId);
-        if (jt) handleJoystickMove(jt.clientX, jt.clientY);
-      }
-
-      // อัปเดตกล้องจากนิ้วของมันเอง
-      if (cameraTouchId !== null) {
-        const ct = findTouchById(e.touches, cameraTouchId);
-        if (ct) {
-          const dx = ct.clientX - prevCamX;
-          const dy = ct.clientY - prevCamY;
-
-          if (Math.abs(dx) <= 120 && Math.abs(dy) <= 120) {
-            cameraYaw -= dx * 0.006;
-            cameraPitch = Math.max(
-              -Math.PI / 2 + 0.01,
-              Math.min(Math.PI / 2 - 0.01, cameraPitch + dy * 0.005)
-            );
-          }
-
-          prevCamX = ct.clientX;
-          prevCamY = ct.clientY;
-        }
-      }
-    }, { passive: false });
-
-    function releaseTouchIds(e) {
-      if (!e.changedTouches) return;
-      for (const t of e.changedTouches) {
-        if (t.identifier === joystickTouchId) {
-          joystickTouchId = null;
-          resetJoystick();
-        }
-        if (t.identifier === cameraTouchId) {
-          cameraTouchId = null;
-          stopCameraDrag();
-        }
-      }
-    }
-
-    document.addEventListener('touchend', releaseTouchIds, { passive: false });
-    document.addEventListener('touchcancel', releaseTouchIds, { passive: false });
-
-    // สำคัญมากสำหรับมือถือ:
-    // ปิด browser pinch/scroll gesture บนพื้นที่เกม แต่ยังรองรับ
-    // pointer ของหลาย ๆ นิ้วพร้อมกันได้ตามปกติ
-    const touchGameCanvas = document.querySelector('canvas');
-    if (touchGameCanvas) {
-      touchGameCanvas.style.touchAction = 'none';
-      touchGameCanvas.style.userSelect = 'none';
-      touchGameCanvas.style.webkitUserSelect = 'none';
-      touchGameCanvas.style.webkitTouchCallout = 'none';
-      touchGameCanvas.addEventListener('gesturestart', e => e.preventDefault(), { passive: false });
-      touchGameCanvas.addEventListener('gesturechange', e => e.preventDefault(), { passive: false });
-      touchGameCanvas.addEventListener('gestureend', e => e.preventDefault(), { passive: false });
-    }
-
-    // ให้หน้าเกมรับ multitouch โดยไม่เปลี่ยนเป็น pinch/scroll ของ browser
-    document.documentElement.style.touchAction = 'none';
-    document.body.style.touchAction = 'none';
+    window.addEventListener('pointerup', () => isDraggingCam = false);
+    window.addEventListener('pointercancel', () => isDraggingCam = false);
 
     document.getElementById('btn-jump').addEventListener('pointerdown', (e) => { e.preventDefault(); jump(); });
     function jump() { if (isGrounded) { velocityY = 0.48; isGrounded = false; } }
@@ -2251,17 +2165,16 @@ html, body, canvas {
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 3));
     });
   </script>
 
-<!-- AUTO DEVICE FULLSCREEN -->
+<!-- MOBILE FULLSCREEN -->
 <button id="fullscreenBtn" type="button" onclick="toggleFullscreen()">⛶ เต็มจอ</button>
 
 <style>
 #fullscreenBtn{
     position:fixed;
-    top:52px;
+    top:12px;
     right:12px;
     z-index:999999;
     padding:9px 13px;
@@ -2285,133 +2198,47 @@ body:-webkit-full-screen{
 }
 @media (max-width:768px){
     #fullscreenBtn{
-        top:48px;
+        top:8px;
         right:8px;
         padding:8px 11px;
         font-size:13px;
     }
 }
-
-
-/* Larger touch controls */
-@media (max-width:768px){
-  #joystick-base{width:120px;height:120px;bottom:18px;left:18px;}
-  #joystick-knob{width:48px;height:48px;}
-  .btn-jump{width:64px;height:64px;right:18px;bottom:54px;font-size:25px;}
-  .elevator-prompt{width:64px;height:64px;right:18px;bottom:132px;font-size:25px;}
-}
 </style>
 
 <script>
-(function(){
-    const doc = document;
-    const el = document.documentElement;
-    const btn = document.getElementById('fullscreenBtn');
+function toggleFullscreen(){
+    const doc=document;
+    const el=document.documentElement;
 
-    // ตรวจอุปกรณ์/เบราว์เซอร์อัตโนมัติ
-    const ua = navigator.userAgent || '';
-    const platform = navigator.platform || '';
-    const isIOS = /iPad|iPhone|iPod/.test(ua) ||
-                  (platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-    const isAndroid = /Android/i.test(ua);
-    const isMac = /Macintosh|Mac OS X/i.test(ua) && !isIOS;
-    const isPC = /Windows|Linux/i.test(ua);
-
-    function isFullscreen(){
-        return !!(
-            doc.fullscreenElement ||
-            doc.webkitFullscreenElement ||
-            doc.msFullscreenElement
-        );
-    }
-
-    function updateFullscreenButton(){
-        if (!btn) return;
-        btn.textContent = isFullscreen() ? '⛶ ออกจากเต็มจอ' : '⛶ เต็มจอ';
-    }
-
-    // เลือกวิธีที่เหมาะกับอุปกรณ์:
-    // ใช้ Standard Fullscreen API ก่อนทุกอุปกรณ์ที่รองรับ
-    // แล้วค่อย fallback ไปยัง WebKit / MS
-    // สำคัญ: iOS รุ่นใหม่มี Element.requestFullscreen แล้ว
-    async function enterFullscreen(){
-        const candidates = [
-            { fn: el.requestFullscreen, ctx: el, name: 'standard' },
-            { fn: el.webkitRequestFullscreen, ctx: el, name: 'webkit' },
-            { fn: el.msRequestFullscreen, ctx: el, name: 'ms' }
-        ];
-
-        for (const item of candidates) {
-            if (typeof item.fn !== 'function') continue;
-
-            try {
-                // อย่าใช้ await ก่อนเรียก requestFullscreen
-                // เพื่อรักษา user gesture จากการแตะปุ่มบนมือถือ
-                const result = item.fn.call(item.ctx);
-                if (result && typeof result.then === 'function') {
-                    await result;
-                }
-                return true;
-            } catch (err) {
-                console.warn('Fullscreen failed:', item.name, err);
-            }
+    if(!doc.fullscreenElement && !doc.webkitFullscreenElement){
+        if(el.requestFullscreen){
+            el.requestFullscreen().catch(()=>{});
+        }else if(el.webkitRequestFullscreen){
+            el.webkitRequestFullscreen();
+        }else{
+            // iOS Safari ไม่รองรับ Fullscreen API บางกรณี
+            alert("เบราว์เซอร์นี้ไม่รองรับโหมดเต็มจอ ให้กดเมนู Share/••• แล้วเลือก 'เพิ่มไปยังหน้าจอโฮม' เพื่อเปิดเกมแบบแอป");
         }
-
-        return false;
-    }
-
-    function exitFullscreen(){
-        try {
-            if (doc.exitFullscreen) {
-                return doc.exitFullscreen();
-            }
-            if (doc.webkitExitFullscreen) {
-                doc.webkitExitFullscreen();
-                return;
-            }
-            if (doc.msExitFullscreen) {
-                doc.msExitFullscreen();
-            }
-        } catch (_) {}
-    }
-
-    window.toggleFullscreen = async function(){
-        if (isFullscreen()) {
-            exitFullscreen();
-        } else {
-            const entered = await enterFullscreen();
-            if (!entered && isIOS) {
-                alert('เบราว์เซอร์ iOS นี้ไม่อนุญาต Fullscreen สำหรับหน้าเว็บนี้\nหากยังเข้าเต็มจอไม่ได้ ให้เปิดเมนู Share → Add to Home Screen แล้วเปิดเกมจากไอคอนบนหน้าจอ');
-            } else if (!entered) {
-                console.warn('เบราว์เซอร์นี้ไม่อนุญาตให้เข้า Fullscreen');
-            }
+    }else{
+        if(doc.exitFullscreen){
+            doc.exitFullscreen().catch(()=>{});
+        }else if(doc.webkitExitFullscreen){
+            doc.webkitExitFullscreen();
         }
-        setTimeout(updateFullscreenButton, 150);
-    };
-
-    // ปรับสถานะปุ่มหลังเข้า/ออกเต็มจอจริง
-    ['fullscreenchange','webkitfullscreenchange','MSFullscreenChange']
-        .forEach(eventName => doc.addEventListener(eventName, updateFullscreenButton));
-
-    doc.addEventListener('fullscreenerror', (e) => {
-        console.warn('Fullscreen API error:', e);
-        setTimeout(updateFullscreenButton, 50);
-    });
-
-    // ตรวจสถานะเมื่อโหลดหน้า
+    }
     updateFullscreenButton();
+}
 
-    // เก็บข้อมูลอุปกรณ์ไว้ให้โค้ดส่วนอื่นใช้ได้ โดยไม่เปลี่ยนพฤติกรรมเดิม
-    window.deviceInfo = {
-        isIOS,
-        isAndroid,
-        isMac,
-        isPC,
-        fullscreenMethod: isIOS
-            ? (el.webkitRequestFullscreen ? 'webkit-iOS' : 'home-screen')
-            : (el.requestFullscreen ? 'standard' : (el.webkitRequestFullscreen ? 'webkit' : 'unsupported'))
-    };
-})();
+function updateFullscreenButton(){
+    const btn=document.getElementById("fullscreenBtn");
+    if(!btn) return;
+    const active=document.fullscreenElement || document.webkitFullscreenElement;
+    btn.textContent=active ? "⛶ ออกจากเต็มจอ" : "⛶ เต็มจอ";
+}
+
+document.addEventListener("fullscreenchange",updateFullscreenButton);
+document.addEventListener("webkitfullscreenchange",updateFullscreenButton);
 </script>
 
 
