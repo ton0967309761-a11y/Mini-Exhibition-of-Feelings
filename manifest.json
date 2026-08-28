@@ -1,0 +1,11 @@
+{
+  "name": "28 SIGNS",
+  "short_name": "28 SIGNS",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "display_override": ["fullscreen", "standalone"],
+  "orientation": "any",
+  "background_color": "#060919",
+  "theme_color": "#060919"
+}
