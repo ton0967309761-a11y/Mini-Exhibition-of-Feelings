@@ -2256,14 +2256,14 @@ html, body, canvas {
   </script>
 
 <!-- AUTO DEVICE FULLSCREEN -->
-<button id="fullscreenBtn" type="button" onclick="toggleFullscreen()">⛶ เต็มจอ</button>
+<button id="fullscreenBtn" type="button">⛶ เต็มจอ</button>
 
-<style>
+<style id="fullscreen-only-style">
 #fullscreenBtn{
     position:fixed;
     top:52px;
     right:12px;
-    z-index:999999;
+    z-index:2147483647;
     padding:9px 13px;
     border:1px solid rgba(255,255,255,.25);
     border-radius:10px;
@@ -2272,19 +2272,31 @@ html, body, canvas {
     font-size:14px;
     font-weight:700;
     cursor:pointer;
-    pointer-events:auto;
-    touch-action:manipulation;
+    pointer-events:auto !important;
+    touch-action:manipulation !important;
+    -webkit-user-select:none;
+    user-select:none;
     -webkit-tap-highlight-color:transparent;
     backdrop-filter:blur(6px);
     -webkit-backdrop-filter:blur(6px);
 }
 #fullscreenBtn:active{transform:scale(.95)}
-html:fullscreen,
-html:-webkit-full-screen,
-body:fullscreen,
-body:-webkit-full-screen{
-    width:100%;
-    height:100%;
+
+html.fs-fallback,
+html.fs-fallback body{
+    width:100% !important;
+    height:100dvh !important;
+    min-height:100dvh !important;
+    overflow:hidden !important;
+}
+html.fs-fallback body{
+    position:fixed !important;
+    inset:0 !important;
+}
+html:fullscreen, html:-webkit-full-screen,
+body:fullscreen, body:-webkit-full-screen{
+    width:100% !important;
+    height:100% !important;
 }
 @media (max-width:768px){
     #fullscreenBtn{
@@ -2294,162 +2306,196 @@ body:-webkit-full-screen{
         font-size:13px;
     }
 }
-
-
-/* Larger touch controls */
-@media (max-width:768px){
-  #joystick-base{width:120px;height:120px;bottom:18px;left:18px;}
-  #joystick-knob{width:48px;height:48px;}
-  .btn-jump{width:64px;height:64px;right:18px;bottom:54px;font-size:25px;}
-  .elevator-prompt{width:64px;height:64px;right:18px;bottom:132px;font-size:25px;}
-}
 </style>
 
 <script>
 (function(){
+    'use strict';
+
     const doc = document;
+    const html = document.documentElement;
+    const body = document.body;
     const btn = document.getElementById('fullscreenBtn');
 
-    // ตรวจอุปกรณ์/เบราว์เซอร์อัตโนมัติ
+    if (!btn) return;
+
     const ua = navigator.userAgent || '';
     const platform = navigator.platform || '';
-    const isIOS = /iPad|iPhone|iPod/.test(ua) ||
+    const isIOS = /iPad|iPhone|iPod/i.test(ua) ||
                   (platform === 'MacIntel' && navigator.maxTouchPoints > 1);
     const isAndroid = /Android/i.test(ua);
-    const isMac = /Macintosh|Mac OS X/i.test(ua) && !isIOS;
-    const isPC = /Windows|Linux/i.test(ua);
 
-    // ตรวจว่าอยู่ใน Fullscreen จริงหรือไม่
+    function nativeFullscreenElement(){
+        return doc.fullscreenElement ||
+               doc.webkitFullscreenElement ||
+               doc.msFullscreenElement ||
+               null;
+    }
+
+    function isFallbackFullscreen(){
+        return html.classList.contains('fs-fallback');
+    }
+
     function isFullscreen(){
-        return !!(
-            doc.fullscreenElement ||
-            doc.webkitFullscreenElement ||
-            doc.msFullscreenElement
-        );
+        return !!nativeFullscreenElement() || isFallbackFullscreen();
     }
 
     function updateFullscreenButton(){
-        if (!btn) return;
-        btn.textContent = isFullscreen() ? '⛶ ออกจากเต็มจอ' : '⛶ เต็มจอ';
+        btn.textContent = isFullscreen()
+            ? '⛶ ออกจากเต็มจอ'
+            : '⛶ เต็มจอ';
     }
 
-    // เรียก API โดยตรงจาก user gesture และลองหลาย target
-    // เพื่อรองรับ Safari/iOS และ Android ที่รองรับ Fullscreen API
-    function callFullscreen(target, methodName, useOptions){
-        if (!target || typeof target[methodName] !== 'function') return null;
+    function getTargets(){
+        const canvas = document.querySelector('canvas');
+        return [canvas, body, html].filter(Boolean);
+    }
 
-        try {
-            if (useOptions) {
-                return target[methodName]({ navigationUI: 'hide' });
-            }
-            return target[methodName]();
-        } catch (err) {
-            console.warn('Fullscreen failed:', methodName, err);
-            return null;
+    function callFullscreen(target){
+        if (!target) return null;
+
+        const methods = [
+            'requestFullscreen',
+            'webkitRequestFullscreen',
+            'webkitRequestFullScreen',
+            'msRequestFullscreen'
+        ];
+
+        for (const name of methods){
+            const fn = target[name];
+            if (typeof fn !== 'function') continue;
+
+            try{
+                const result = fn.call(target);
+                return result && typeof result.then === 'function'
+                    ? result
+                    : Promise.resolve();
+            }catch(e){}
         }
+
+        return null;
+    }
+
+    function enterFallback(){
+        html.classList.add('fs-fallback');
+        body.classList.add('fs-fallback');
+        updateFullscreenButton();
+
+        setTimeout(function(){
+            window.dispatchEvent(new Event('resize'));
+        }, 50);
+
+        return true;
     }
 
     async function enterFullscreen(){
-        const targets = [];
+        /*
+         * สำคัญ:
+         * เรียก API ทันทีจาก event ของปุ่ม
+         * ไม่รอ/ไม่ใช้ await ก่อนเริ่ม requestFullscreen
+         */
+        const targets = getTargets();
 
-        // ให้ body เป็นตัวเลือกแรก เพื่อให้ UI ทั้งเกมเข้าเต็มจอ
-        if (doc.body) targets.push(doc.body);
-        if (doc.documentElement) targets.push(doc.documentElement);
+        for (const target of targets){
+            const request = callFullscreen(target);
+            if (!request) continue;
 
-        // canvas เป็น fallback สำหรับ Safari/iOS บางเวอร์ชัน
-        const canvas = document.querySelector('canvas');
-        if (canvas) targets.push(canvas);
-
-        const methods = isIOS
-            ? ['requestFullscreen', 'webkitRequestFullscreen']
-            : ['requestFullscreen', 'webkitRequestFullscreen', 'msRequestFullscreen'];
-
-        for (const target of targets) {
-            for (const methodName of methods) {
-                if (typeof target[methodName] !== 'function') continue;
-
-                try {
-                    // ห้ามมี await ก่อนคำสั่งนี้ เพื่อรักษา user activation บน iOS/Android
-                    const result = methodName === 'requestFullscreen'
-                        ? callFullscreen(target, methodName, true)
-                        : callFullscreen(target, methodName, false);
-
-                    if (result && typeof result.then === 'function') {
-                        await result;
-                    }
-
-                    // บางเบราว์เซอร์เปลี่ยนสถานะหลังจาก event loop
-                    await new Promise(resolve => setTimeout(resolve, 50));
-
-                    if (isFullscreen()) return true;
-                } catch (err) {
-                    console.warn('Fullscreen failed:', methodName, err);
+            try{
+                await request;
+                if (nativeFullscreenElement()){
+                    updateFullscreenButton();
+                    return true;
                 }
-            }
+            }catch(e){}
+        }
+
+        /*
+         * iOS Safari บางโหมดไม่อนุญาต Fullscreen API
+         * จึงใช้ visual fullscreen fallback แทน
+         */
+        if (isIOS || isAndroid){
+            return enterFallback();
         }
 
         return false;
     }
 
     function exitFullscreen(){
-        try {
-            if (typeof doc.exitFullscreen === 'function') {
-                return doc.exitFullscreen();
+        html.classList.remove('fs-fallback');
+        body.classList.remove('fs-fallback');
+
+        try{
+            if (doc.exitFullscreen){
+                const p = doc.exitFullscreen();
+                if (p && typeof p.catch === 'function') p.catch(function(){});
+            }else if (doc.webkitExitFullscreen){
+                doc.webkitExitFullscreen();
+            }else if (doc.msExitFullscreen){
+                doc.msExitFullscreen();
             }
-            if (typeof doc.webkitExitFullscreen === 'function') {
-                return doc.webkitExitFullscreen();
-            }
-            if (typeof doc.msExitFullscreen === 'function') {
-                return doc.msExitFullscreen();
-            }
-        } catch (err) {
-            console.warn('Exit fullscreen failed:', err);
+        }catch(e){}
+
+        setTimeout(function(){
+            window.dispatchEvent(new Event('resize'));
+            updateFullscreenButton();
+        }, 50);
+    }
+
+    function toggleFullscreen(){
+        if (isFullscreen()){
+            exitFullscreen();
+        }else{
+            enterFullscreen().then(function(){
+                updateFullscreenButton();
+            }).catch(function(){
+                if (isIOS || isAndroid){
+                    enterFallback();
+                }
+                updateFullscreenButton();
+            });
         }
     }
 
-    window.toggleFullscreen = function(){
-        // ต้องเริ่มคำสั่งทันทีจาก click/tap ไม่รอ async ก่อน
-        if (isFullscreen()) {
-            exitFullscreen();
-            setTimeout(updateFullscreenButton, 150);
-            return;
+    /*
+     * ใช้ pointerup + click กันปัญหา touch บางเบราว์เซอร์
+     * แต่ป้องกันไม่ให้คำสั่งทำงานซ้ำสองครั้ง
+     */
+    let lastPointerTime = 0;
+
+    btn.addEventListener('pointerup', function(e){
+        if (e.pointerType === 'touch'){
+            e.preventDefault();
+            lastPointerTime = Date.now();
+            toggleFullscreen();
         }
+    }, {passive:false});
 
-        enterFullscreen().then(function(entered){
-            if (!entered) {
-                if (isIOS) {
-                    alert('Safari/iOS เวอร์ชันนี้ไม่รองรับ Fullscreen API สำหรับหน้าเว็บนี้');
-                } else {
-                    console.warn('เบราว์เซอร์นี้ไม่อนุญาตให้เข้า Fullscreen');
-                }
-            }
-            updateFullscreenButton();
-        });
-    };
+    btn.addEventListener('click', function(e){
+        e.preventDefault();
 
-    // รองรับสถานะ Fullscreen ของทุก browser
+        if (Date.now() - lastPointerTime < 700) return;
+
+        toggleFullscreen();
+    });
+
     ['fullscreenchange','webkitfullscreenchange','MSFullscreenChange']
-        .forEach(eventName => doc.addEventListener(eventName, updateFullscreenButton));
+        .forEach(function(eventName){
+            doc.addEventListener(eventName, updateFullscreenButton);
+        });
 
-    ['fullscreenerror','webkitfullscreenerror']
-        .forEach(eventName => doc.addEventListener(eventName, function(){
-            setTimeout(updateFullscreenButton, 50);
-        }));
+    doc.addEventListener('fullscreenerror', function(){
+        if (isIOS || isAndroid){
+            enterFallback();
+        }
+        updateFullscreenButton();
+    });
 
     updateFullscreenButton();
 
-    // เก็บข้อมูลอุปกรณ์ไว้ให้โค้ดส่วนอื่นใช้ได้เหมือนเดิม
-    window.deviceInfo = {
-        isIOS,
-        isAndroid,
-        isMac,
-        isPC,
-        fullscreenMethod: isIOS
-            ? 'ios-adaptive'
-            : (doc.documentElement.requestFullscreen
-                ? 'standard'
-                : (doc.documentElement.webkitRequestFullscreen ? 'webkit' : 'unsupported'))
-    };
+    window.deviceInfo = window.deviceInfo || {};
+    window.deviceInfo.isIOS = isIOS;
+    window.deviceInfo.isAndroid = isAndroid;
+    window.deviceInfo.fullscreenFixed = true;
 })();
 </script>
 
