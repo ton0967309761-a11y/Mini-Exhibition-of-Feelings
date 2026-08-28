@@ -208,6 +208,13 @@ html, body, canvas {
   overscroll-behavior: none !important;
 }
 </style>
+
+<link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#060919">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
 </head>
 <body>
 
@@ -2255,247 +2262,108 @@ html, body, canvas {
     });
   </script>
 
-<!-- AUTO DEVICE FULLSCREEN -->
-<button id="fullscreenBtn" type="button">⛶ เต็มจอ</button>
-
-<style id="fullscreen-only-style">
-#fullscreenBtn{
-    position:fixed;
-    top:52px;
-    right:12px;
-    z-index:2147483647;
-    padding:9px 13px;
-    border:1px solid rgba(255,255,255,.25);
-    border-radius:10px;
-    background:rgba(0,0,0,.72);
-    color:#fff;
-    font-size:14px;
-    font-weight:700;
-    cursor:pointer;
-    pointer-events:auto !important;
-    touch-action:manipulation !important;
-    -webkit-user-select:none;
-    user-select:none;
-    -webkit-tap-highlight-color:transparent;
-    backdrop-filter:blur(6px);
-    -webkit-backdrop-filter:blur(6px);
-}
-#fullscreenBtn:active{transform:scale(.95)}
-
-html.fs-fallback,
-html.fs-fallback body{
-    width:100% !important;
-    height:100dvh !important;
-    min-height:100dvh !important;
-    overflow:hidden !important;
-}
-html.fs-fallback body{
-    position:fixed !important;
-    inset:0 !important;
-}
-html:fullscreen, html:-webkit-full-screen,
-body:fullscreen, body:-webkit-full-screen{
-    width:100% !important;
-    height:100% !important;
-}
-@media (max-width:768px){
-    #fullscreenBtn{
-        top:48px;
-        right:8px;
-        padding:8px 11px;
-        font-size:13px;
-    }
-}
-</style>
-
+<!-- AUTO DEVICE FULLSCREEN / PWA -->
 <script>
 (function(){
-    'use strict';
-
     const doc = document;
-    const html = document.documentElement;
-    const body = document.body;
+    const el = document.documentElement;
     const btn = document.getElementById('fullscreenBtn');
-
-    if (!btn) return;
 
     const ua = navigator.userAgent || '';
     const platform = navigator.platform || '';
-    const isIOS = /iPad|iPhone|iPod/i.test(ua) ||
+    const isIOS = /iPad|iPhone|iPod/.test(ua) ||
                   (platform === 'MacIntel' && navigator.maxTouchPoints > 1);
     const isAndroid = /Android/i.test(ua);
-
-    function nativeFullscreenElement(){
-        return doc.fullscreenElement ||
-               doc.webkitFullscreenElement ||
-               doc.msFullscreenElement ||
-               null;
-    }
-
-    function isFallbackFullscreen(){
-        return html.classList.contains('fs-fallback');
-    }
+    const isStandalone = !!(
+        window.matchMedia('(display-mode: standalone)').matches ||
+        window.navigator.standalone === true
+    );
 
     function isFullscreen(){
-        return !!nativeFullscreenElement() || isFallbackFullscreen();
+        return !!(
+            doc.fullscreenElement ||
+            doc.webkitFullscreenElement ||
+            doc.msFullscreenElement ||
+            isStandalone
+        );
     }
 
     function updateFullscreenButton(){
-        btn.textContent = isFullscreen()
-            ? '⛶ ออกจากเต็มจอ'
-            : '⛶ เต็มจอ';
-    }
-
-    function getTargets(){
-        const canvas = document.querySelector('canvas');
-        return [canvas, body, html].filter(Boolean);
+        if (!btn) return;
+        btn.textContent = isFullscreen() ? '⛶ ออกจากเต็มจอ' : '⛶ เต็มจอ';
     }
 
     function callFullscreen(target){
         if (!target) return null;
-
-        const methods = [
-            'requestFullscreen',
-            'webkitRequestFullscreen',
-            'webkitRequestFullScreen',
-            'msRequestFullscreen'
-        ];
-
-        for (const name of methods){
-            const fn = target[name];
-            if (typeof fn !== 'function') continue;
-
-            try{
-                const result = fn.call(target);
-                return result && typeof result.then === 'function'
-                    ? result
-                    : Promise.resolve();
-            }catch(e){}
-        }
-
-        return null;
-    }
-
-    function enterFallback(){
-        html.classList.add('fs-fallback');
-        body.classList.add('fs-fallback');
-        updateFullscreenButton();
-
-        setTimeout(function(){
-            window.dispatchEvent(new Event('resize'));
-        }, 50);
-
-        return true;
-    }
-
-    async function enterFullscreen(){
-        /*
-         * สำคัญ:
-         * เรียก API ทันทีจาก event ของปุ่ม
-         * ไม่รอ/ไม่ใช้ await ก่อนเริ่ม requestFullscreen
-         */
-        const targets = getTargets();
-
-        for (const target of targets){
-            const request = callFullscreen(target);
-            if (!request) continue;
-
-            try{
-                await request;
-                if (nativeFullscreenElement()){
-                    updateFullscreenButton();
-                    return true;
-                }
-            }catch(e){}
-        }
-
-        /*
-         * iOS Safari บางโหมดไม่อนุญาต Fullscreen API
-         * จึงใช้ visual fullscreen fallback แทน
-         */
-        if (isIOS || isAndroid){
-            return enterFallback();
-        }
-
-        return false;
-    }
-
-    function exitFullscreen(){
-        html.classList.remove('fs-fallback');
-        body.classList.remove('fs-fallback');
-
-        try{
-            if (doc.exitFullscreen){
-                const p = doc.exitFullscreen();
-                if (p && typeof p.catch === 'function') p.catch(function(){});
-            }else if (doc.webkitExitFullscreen){
-                doc.webkitExitFullscreen();
-            }else if (doc.msExitFullscreen){
-                doc.msExitFullscreen();
-            }
-        }catch(e){}
-
-        setTimeout(function(){
-            window.dispatchEvent(new Event('resize'));
-            updateFullscreenButton();
-        }, 50);
-    }
-
-    function toggleFullscreen(){
-        if (isFullscreen()){
-            exitFullscreen();
-        }else{
-            enterFullscreen().then(function(){
-                updateFullscreenButton();
-            }).catch(function(){
-                if (isIOS || isAndroid){
-                    enterFallback();
-                }
-                updateFullscreenButton();
-            });
+        const fn = target.requestFullscreen ||
+                   target.webkitRequestFullscreen ||
+                   target.msRequestFullscreen;
+        if (typeof fn !== 'function') return null;
+        try {
+            return fn.call(target);
+        } catch (_) {
+            return null;
         }
     }
 
-    /*
-     * ใช้ pointerup + click กันปัญหา touch บางเบราว์เซอร์
-     * แต่ป้องกันไม่ให้คำสั่งทำงานซ้ำสองครั้ง
-     */
-    let lastPointerTime = 0;
-
-    btn.addEventListener('pointerup', function(e){
-        if (e.pointerType === 'touch'){
-            e.preventDefault();
-            lastPointerTime = Date.now();
-            toggleFullscreen();
+    window.toggleFullscreen = function(){
+        if (doc.fullscreenElement || doc.webkitFullscreenElement || doc.msFullscreenElement) {
+            try {
+                if (doc.exitFullscreen) return doc.exitFullscreen();
+                if (doc.webkitExitFullscreen) return doc.webkitExitFullscreen();
+                if (doc.msExitFullscreen) return doc.msExitFullscreen();
+            } catch (_) {}
+            return;
         }
-    }, {passive:false});
 
-    btn.addEventListener('click', function(e){
-        e.preventDefault();
+        // Must be called directly from the user's tap/click.
+        let result = callFullscreen(el);
 
-        if (Date.now() - lastPointerTime < 700) return;
+        if (!result && document.body !== el) {
+            result = callFullscreen(document.body);
+        }
 
-        toggleFullscreen();
-    });
+        // Some browsers return a Promise; do not await before the API call.
+        if (result && typeof result.catch === 'function') {
+            result.catch(function(){});
+        }
+
+        setTimeout(updateFullscreenButton, 250);
+    };
 
     ['fullscreenchange','webkitfullscreenchange','MSFullscreenChange']
-        .forEach(function(eventName){
-            doc.addEventListener(eventName, updateFullscreenButton);
+        .forEach(function(name){
+            doc.addEventListener(name, updateFullscreenButton, false);
         });
 
-    doc.addEventListener('fullscreenerror', function(){
-        if (isIOS || isAndroid){
-            enterFallback();
-        }
-        updateFullscreenButton();
-    });
+    // Make sure the button itself remains directly tappable on mobile.
+    if (btn) {
+        btn.style.pointerEvents = 'auto';
+        btn.style.touchAction = 'manipulation';
+        btn.addEventListener('touchend', function(e){
+            e.preventDefault();
+            e.stopPropagation();
+            window.toggleFullscreen();
+        }, {passive:false});
+    }
 
     updateFullscreenButton();
 
-    window.deviceInfo = window.deviceInfo || {};
-    window.deviceInfo.isIOS = isIOS;
-    window.deviceInfo.isAndroid = isAndroid;
-    window.deviceInfo.fullscreenFixed = true;
+    window.deviceInfo = {
+        isIOS: isIOS,
+        isAndroid: isAndroid,
+        isStandalone: isStandalone
+    };
+})();
+</script>
+
+<script>
+(function(){
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function(){
+            navigator.serviceWorker.register('./sw.js').catch(function(){});
+        });
+    }
 })();
 </script>
 
